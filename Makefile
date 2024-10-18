@@ -31,6 +31,7 @@ $(DEB_STAMP): $(REPACK_STAMP)
 	touch $(DEB_STAMP)
 
 $(REPACK_STAMP): $(KEY_STAMP) $(NETTY_REPLACE_STAMP)
+	cp ./runtest.sh $(BUILD_DIR)/dist/
 	mkdir -p $(BUILD_DIR)/dist/$(DIST_NAME)
 	mv $(BUILD_DIR)/dist/ $(BUILD_DIR)/$(DIST_NAME)
 	tar -czf $(BUILD_DIR)/$(DIST_NAME).tar.gz -C $(BUILD_DIR) $(DIST_NAME)
