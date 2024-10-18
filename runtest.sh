@@ -1,11 +1,11 @@
 ./cloudformation/run-performance-tests.sh \
 -u heshanp@wso2.com \
 -f ../ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz \
--k "$(PERF_PREFIX)"/bhashinee-ballerina.pem \
+-k $PERF_PREFIX/bhashinee-ballerina.pem \
 -n bhashinee-ballerina \
--j "$(PERF_PREFIX)"/apache-jmeter-5.1.1.tgz \
--o "$(PERF_PREFIX)"/jdk-8u345-linux-x64.tar.gz \
--g "$(PERF_PREFIX)"/gcviewer-1.36.jar \
+-j $PERF_PREFIX/apache-jmeter-5.1.1.tgz \
+-o $PERF_PREFIX/jdk-8u345-linux-x64.tar.gz \
+-g $PERF_PREFIX/gcviewer-1.36.jar \
 -s 'wso2-ballerina-test1-' \
 -b ballerina-sl-9 \
 -r 'us-east-1' \
