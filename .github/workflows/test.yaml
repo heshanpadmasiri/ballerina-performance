@@ -35,5 +35,7 @@ jobs:
             run : tar -xzf ./test-dist/ballerina-performance-*.tar.gz -C test-dist
           - name: Setup common path prefix
             run: echo "PERF_PREFIX=/home/ubuntu/perf" >> $GITHUB_ENV
+          - name: Make test runner executable
+            run: chmod +x test-dist/ballerina-performance-distribution-1.1.1-SNAPSHOT/runtest.sh
           - name: run test
             run: cd test-dist/ballerina-performance-distribution-1.1.1-SNAPSHOT && ./runtest.sh
