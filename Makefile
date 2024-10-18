@@ -1,6 +1,6 @@
 PERFORMANCE_COMMON_PATH?=../performance-common
-BAL_DIST?=/opt/homebrew/Cellar/ballerina/2201.9.2/libexec/distributions/ballerina-2201.10.0
-KEY_FILES=$(BAL_DIST)/bre/security/*.p12
+KEY_FILE_PREFIX?=/opt/homebrew/Cellar/ballerina/2201.9.2/libexec/distributions/ballerina-2201.10.0/bre/security
+KEY_FILES=$(KEY_FILE_PREFIX)/*.p12
 NETTY_JAR_WITH_DEP?=netty-http-echo-service-0.4.6-SNAPSHOT-jar-with-dependencies.jar
 NETTY_JAR=netty-http-echo-service-0.4.6-SNAPSHOT.jar
 NETTY_JAR_PATH=$(PERFORMANCE_COMMON_PATH)/components/netty-http-echo-service/target/$(NETTY_JAR_WITH_DEP)

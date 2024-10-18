@@ -22,4 +22,4 @@ jobs:
           - name: Clone performance-common repository
             run: git clone --branch bhashinee-changes https://github.com/wso2/performance-common.git performance-common
           - name: Build with make dist
-            run: make PERFORMANCE_COMMON_PATH=./performance-common dist
+            run: make KEY_FILE_PREFIX=/home/ubuntu/key-files PERFORMANCE_COMMON_PATH=./performance-common dist
