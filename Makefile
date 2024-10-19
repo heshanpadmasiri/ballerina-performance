@@ -4,6 +4,7 @@ KEY_FILES=$(KEY_FILE_PREFIX)/*.p12
 NETTY_JAR_WITH_DEP?=netty-http-echo-service-0.4.6-SNAPSHOT-jar-with-dependencies.jar
 NETTY_JAR=netty-http-echo-service-0.4.6-SNAPSHOT.jar
 NETTY_JAR_PATH=$(PERFORMANCE_COMMON_PATH)/components/netty-http-echo-service/target/$(NETTY_JAR_WITH_DEP)
+CREATE_TEMPLATE_PATH=$(PERFORMANCE_COMMON_PATH)/distribution/scripts/cloudformation/create-template.py
 DIST_VER?=1.1.1-SNAPSHOT
 DIST_NAME=ballerina-performance-distribution-$(DIST_VER)
 PERF_TAR=$(DIST_NAME).tar.gz
@@ -13,6 +14,7 @@ BAL_VER?=2201.10.1
 DEB_URL?=https://dist.ballerina.io/downloads/$(BAL_VER)/ballerina-$(BAL_VER)-swan-lake-linux-x64.deb
 UNPACK_STAMP=.unpack.stamp
 NETTY_REPLACE_STAMP=.netty.stamp
+CREATE_TEMPLATE_REPLACE_STAMP=.template.stamp
 ADD_RUNNER_STAMP=.runner.stamp
 KEY_STAMP=.key.stamp
 REPACK_STAMP=.repack.stamp
@@ -32,7 +34,7 @@ $(DEB_STAMP): $(REPACK_STAMP)
 	cd $(BUILD_DIR) && wget $(DEB_URL)
 	touch $(DEB_STAMP)
 
-$(REPACK_STAMP): $(KEY_STAMP) $(NETTY_REPLACE_STAMP) $(ADD_RUNNER_STAMP)
+$(REPACK_STAMP): $(KEY_STAMP) $(NETTY_REPLACE_STAMP) $(ADD_RUNNER_STAMP) $(CREATE_TEMPLATE_REPLACE_STAMP)
 	mkdir -p $(BUILD_DIR)/dist/$(DIST_NAME)
 	mv $(BUILD_DIR)/dist/ $(BUILD_DIR)/$(DIST_NAME)
 	tar -czf $(BUILD_DIR)/$(DIST_NAME).tar.gz -C $(BUILD_DIR) $(DIST_NAME)
@@ -49,6 +51,10 @@ $(KEY_STAMP): $(KEY_FILES) $(UNPACK_STAMP)
 $(ADD_RUNNER_STAMP): $(UNPACK_STAMP)
 	cp -r ./runner $(BUILD_DIR)/dist
 	touch $(ADD_RUNNER_STAMP)
+
+$(CREATE_TEMPLATE_REPLACE_STAMP): $(UNPACK_STAMP)
+	cp -r $(CREATE_TEMPLATE_PATH) $(BUILD_DIR)/dist/cloudformation/create-template.py
+	touch $(CREATE_TEMPLATE_REPLACE_STAMP)
 
 $(NETTY_REPLACE_STAMP): $(NETTY_JAR_PATH) $(UNPACK_STAMP)
 	rm -f $(BUILD_DIR)/dist/netty-service/$(NETTY_JAR)
