@@ -40,7 +40,7 @@ class ExecConfig(TypedDict):
     heap_size: str
     machine_name: str
 
-DEBUG = True
+DEBUG = False
 DIST_PATH = os.path.abspath('..')
 BAL_START_SCRIPT_PATH = f'{DIST_PATH}/ballerina/ballerina-start.sh'
 SCRIPT_PATH = os.path.abspath(__file__)
