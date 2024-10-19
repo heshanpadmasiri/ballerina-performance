@@ -20,7 +20,7 @@ jobs:
             with:
               ref: ${{ github.event.inputs.branch }}
           - name: Clone performance-common repository
-            run: git clone --branch bhashinee-changes https://github.com/wso2/performance-common.git performance-common
+            run: git clone --branch ballerina-patch https://github.com/heshanpadmasiri/performance-common.git performance-common
           - name: Set up Java
             run: echo "JAVA_HOME=/home/ubuntu/jdk/jdk-17.0.13+11" >> $GITHUB_ENV
           - name: Build with make dist
