@@ -1,0 +1,12 @@
+{
+    "test_grid": {
+        "heap_sizes": ["1G"],
+        "message_sizes": [500],
+        "n_users": [100],
+        "active_process_counts": [-1],
+        "instance_types": ["t3.small"]
+    },
+    "test_configs" : {
+        "bal_installer_path": "../ballerina-2201.10.1-swan-lake-linux-x64.deb"
+    }
+}

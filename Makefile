@@ -9,9 +9,11 @@ DIST_NAME=ballerina-performance-distribution-$(DIST_VER)
 PERF_TAR=$(DIST_NAME).tar.gz
 PERF_TAR_PATH=./distribution/target/$(PERF_TAR)
 BUILD_DIR=./build
-DEB_URL?=https://dist.ballerina.io/downloads/2201.10.1/ballerina-2201.10.1-swan-lake-linux-x64.deb
+BAL_VER?=2201.10.1
+DEB_URL?=https://dist.ballerina.io/downloads/$(BAL_VER)/ballerina-$(BAL_VER)-swan-lake-linux-x64.deb
 UNPACK_STAMP=.unpack.stamp
 NETTY_REPLACE_STAMP=.netty.stamp
+ADD_RUNNER_STAMP=.runner.stamp
 KEY_STAMP=.key.stamp
 REPACK_STAMP=.repack.stamp
 DEB_STAMP=.deb.stamp
@@ -20,7 +22,7 @@ DIST_STAMP=.dist.stamp
 dist: $(DIST_STAMP)
 
 $(DIST_STAMP): $(REPACK_STAMP) $(DEB_STAMP)
-	tar -czf $(BUILD_DIR)/dist.tar.gz -C $(BUILD_DIR) $(PERF_TAR) ballerina-2201.10.1-swan-lake-linux-x64.deb
+	tar -czf $(BUILD_DIR)/dist.tar.gz -C $(BUILD_DIR) $(PERF_TAR) ballerina-$(BAL_VER)-swan-lake-linux-x64.deb
 	touch $(DIST_STAMP)
 
 $(NETTY_JAR_PATH):
@@ -30,8 +32,7 @@ $(DEB_STAMP): $(REPACK_STAMP)
 	cd $(BUILD_DIR) && wget $(DEB_URL)
 	touch $(DEB_STAMP)
 
-$(REPACK_STAMP): $(KEY_STAMP) $(NETTY_REPLACE_STAMP)
-	cp ./runtest.sh $(BUILD_DIR)/dist/
+$(REPACK_STAMP): $(KEY_STAMP) $(NETTY_REPLACE_STAMP) $(ADD_RUNNER_STAMP)
 	mkdir -p $(BUILD_DIR)/dist/$(DIST_NAME)
 	mv $(BUILD_DIR)/dist/ $(BUILD_DIR)/$(DIST_NAME)
 	tar -czf $(BUILD_DIR)/$(DIST_NAME).tar.gz -C $(BUILD_DIR) $(DIST_NAME)
@@ -44,6 +45,10 @@ $(PERF_TAR_PATH):
 $(KEY_STAMP): $(KEY_FILES) $(UNPACK_STAMP)
 	cp $(KEY_FILES) $(BUILD_DIR)/dist
 	touch $(KEY_STAMP)
+
+$(ADD_RUNNER_STAMP): $(UNPACK_STAMP)
+	cp -r ./runner $(BUILD_DIR)/dist
+	touch $(ADD_RUNNER_STAMP)
 
 $(NETTY_REPLACE_STAMP): $(NETTY_JAR_PATH) $(UNPACK_STAMP)
 	rm -f $(BUILD_DIR)/dist/netty-service/$(NETTY_JAR)

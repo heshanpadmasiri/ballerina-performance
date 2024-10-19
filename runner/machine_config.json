@@ -1,0 +1,71 @@
+{
+    "t3.small": {
+        "cpu": 2,
+        "memory": 2,
+        "arch": "x86_64"
+    },
+    "t3.medium": {
+        "cpu": 2,
+        "memory": 4,
+        "arch": "x86_64"
+    },
+    "t4g.small": {
+        "cpu": 2,
+        "memory": 2,
+        "arch": "arm64"
+    },
+    "t4g.large": {
+        "cpu": 2,
+        "memory": 8,
+        "arch": "arm64"
+    },
+    "m7i-flex.large": {
+        "cpu": 2,
+        "memory": 8,
+        "arch": "x86_64"
+    },
+    "m7i-flex.xlarge": {
+        "cpu": 4,
+        "memory": 16,
+        "arch": "x86_64"
+    },
+    "m7g.xlarge": {
+        "cpu": 4,
+        "memory": 16,
+        "arch": "arm64"
+    },
+    "c8g.large": {
+        "cpu": 2,
+        "memory": 4,
+        "arch": "arm64"
+    },
+    "c8gx.large": {
+        "cpu": 4,
+        "memory": 8,
+        "arch": "arm64"
+    },
+    "c4.xlarge": {
+        "cpu": 4,
+        "memory": 7.5,
+        "arch": "x86_64"
+    },
+    "c7i.xlarge": {
+        "cpu": 4,
+        "memory": 8,
+        "arch": "x86_64"
+    },
+    "c7gn.xlarge": {
+        "cpu": 4,
+        "memory": 8,
+        "arch": "arm64"
+    },
+    "x2gd.medium": {
+        "cpu": 1,
+        "memory": 16,
+        "arch": "arm64"
+    },
+    "r7i.large": {
+        "cpu": 2,
+        "memory": 16
+    }
+}

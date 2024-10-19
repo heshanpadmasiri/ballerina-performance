@@ -25,10 +25,6 @@ jobs:
             run: echo "JAVA_HOME=/home/ubuntu/jdk/jdk-17.0.13+11" >> $GITHUB_ENV
           - name: Build with make dist
             run: make KEY_FILE_PREFIX=/home/ubuntu/key-files PERFORMANCE_COMMON_PATH=./performance-common dist
-          - name: Set up Java
-            run: echo "JAVA_HOME=/home/ubuntu/jdk/jdk-17.0.13+11" >> $GITHUB_ENV
-          - name: Build test distribution
-            run: make KEY_FILE_PREFIX=/home/ubuntu/key-files PERFORMANCE_COMMON_PATH=./performance-common dist
           - name: unpack test distribution
             run: mkdir -p test-dist && tar -xzf ./build/dist.tar.gz -C test-dist
           - name: unpack ballerina-performance
@@ -37,7 +33,5 @@ jobs:
             run: echo "PERF_PREFIX=/home/ubuntu/perf" >> $GITHUB_ENV
           - name: Dissable AWS pager
             run: echo "AWS_PAGER=" >> $GITHUB_ENV
-          - name: Make test runner executable
-            run: chmod +x test-dist/ballerina-performance-distribution-1.1.1-SNAPSHOT/runtest.sh
           - name: run test
-            run: cd test-dist/ballerina-performance-distribution-1.1.1-SNAPSHOT && ./runtest.sh
+            run: cd test-dist/ballerina-performance-distribution-1.1.1-SNAPSHOT/runner/ && python3 main.py
