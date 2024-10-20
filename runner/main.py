@@ -147,7 +147,6 @@ def message_size_string(test_config: TestConfig) -> str:
         parts.append(f'-b {message_size}')
     return ' '.join(parts) + ' '
 
-# FIXME:
 def test_selection_string(test_config):
     parts = []
     test_config = test_config['test_configs']
@@ -155,6 +154,8 @@ def test_selection_string(test_config):
         parts.append(f'-i {test}')
     for test in test_config['exclude_tests']:
         parts.append(f'-e {test}')
+    if len(parts) == 0:
+        return ''
     return ' '.join(parts) + ' '
 
 def create_run_command(exec_config: ExecConfig):
@@ -172,7 +173,6 @@ def create_run_command(exec_config: ExecConfig):
 -J c5.xlarge -S c5.xlarge -N c5.xlarge -B {exec_config['machine_name']} \
 -i {exec_config['bal_installer_path']} \
 -- -d 360 -w 180 \
-{exec_config['test_selection']} \
 {exec_config['user_count']}\
 {exec_config['message_size']}\
 -s 0 -j 2G -k 2G -m {exec_config['heap_size']} -l 2G"
