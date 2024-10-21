@@ -70,7 +70,8 @@ def exec_command(cwd: str, command: List[str]):
             os.dup2(devnull.fileno(), sys.stderr.fileno())
 
         # Start the actual subprocess
-        subprocess.Popen(command, cwd=cwd)
+        process = subprocess.Popen(command, cwd=cwd, start_new_session=True)
+        print(f'Process started with pid {process.pid}')
 
 def get_config(config_path:str)->TestConfig:
     with open(config_path) as f:
