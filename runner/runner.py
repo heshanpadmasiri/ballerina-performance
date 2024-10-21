@@ -6,6 +6,7 @@ import requests
 import sys
 import time
 import zipfile
+import shlex, subprocess
 from typing import Generator, Optional, Tuple, TypedDict, List, Dict
 
 DEBUG = False
@@ -172,7 +173,9 @@ def create_run_command(exec_config: ExecConfig) -> str:
     return ' '.join(command)
 
 def exec_command(cwd: str, command: str):
-    os.system(f'../{command} > log.log')
+    args = shlex.split(command)
+    with open(f'{cwd}/output.log', 'w') as f:
+        subprocess.run(args, cwd=cwd, stdout=f, stderr=f)
 
 def get_config(config_path:str)->TestConfig:
     with open(config_path) as f:
