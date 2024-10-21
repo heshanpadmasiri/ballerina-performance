@@ -23,7 +23,7 @@ class MachineConfig(TypedDict):
     cpu: int
     arch: str
 
-DEBUG = True
+DEBUG = False
 DIST_PATH = os.path.abspath('..')
 BAL_START_SCRIPT_PATH = f'{DIST_PATH}/ballerina/ballerina-start.sh'
 SCRIPT_PATH = os.path.abspath(__file__)
@@ -46,13 +46,12 @@ def exec_command(cwd: str, command: List[str]):
     if DEBUG:
         subprocess.run(command, cwd=cwd)
     else:
-        with open(os.devnull, 'wb') as devnull:
+        with open("log.log", 'w') as f:
             process = subprocess.Popen(
                 command, 
                 cwd=cwd, 
-                stdout=devnull, 
-                stderr=devnull, 
-                stdin=devnull, 
+                stdout=f, 
+                stderr=f, 
                 preexec_fn=os.setpgrp
             )
             print(f'Process started with PID: {process.pid}')
