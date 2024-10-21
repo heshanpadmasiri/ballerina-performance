@@ -172,7 +172,7 @@ def create_run_command(exec_config: ExecConfig) -> str:
     return ' '.join(command)
 
 def exec_command(cwd: str, command: str):
-    os.system(f'cd {cwd} && {command}')
+    os.system(f'cd {cwd} && {command} > log.log')
 
 def get_config(config_path:str)->TestConfig:
     with open(config_path) as f:

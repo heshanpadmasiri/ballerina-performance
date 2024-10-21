@@ -48,7 +48,7 @@ def exec_command(cwd: str, command: List[str]):
         subprocess.run(command, cwd=cwd)
     else:
         command_str = ' '.join(command)
-        os.system(f'{command_str} &')
+        os.system(f'{command_str} > output.log 2>&1 &')
 
 def get_config(config_path:str)->TestConfig:
     with open(config_path) as f:
