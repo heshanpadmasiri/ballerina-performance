@@ -320,6 +320,7 @@ def main():
     write_to_pr(args.repo, args.pr, args.token, "Performance tests started")
     for machine_name in testConfig['test_grid']['instance_types']:
         machine_test_config = get_test_config_for_machine(testConfig, machine_configs, machine_name);
+        write_to_pr(args.repo, args.pr, args.token, f"Config: {machine_test_config}")
         for run_config in get_exec_config(testConfig, machine_test_config):
             cx = Context(root_context, DIST_PATH)
             command = create_run_command(run_config)
