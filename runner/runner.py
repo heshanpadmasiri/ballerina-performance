@@ -287,7 +287,6 @@ def get_arg_parser()->argparse.ArgumentParser:
 
 def write_to_pr(repo: str, pr_number:int, github_token:str, message:str):
     api_url = f"https://api.github.com/repos/{repo}/issues/{pr_number}/comments"
-
     comment = {
         "body": message
     }
@@ -318,24 +317,25 @@ def main():
     validate_configs(testConfig, machine_configs)
     root_context = RootContext()
     write_to_pr(args.repo, args.pr, args.token, "Performance tests started")
-    for machine_name in testConfig['test_grid']['instance_types']:
-        try:
+    try:
+        for machine_name in testConfig['test_grid']['instance_types']:
             machine_test_config = get_test_config_for_machine(testConfig, machine_configs, machine_name);
-        except Exception as e:
+            write_to_pr(args.repo, args.pr, args.token, f"Config: {machine_test_config}")
+            for run_config in get_exec_config(testConfig, machine_test_config):
+                cx = Context(root_context, DIST_PATH)
+                command = create_run_command(run_config)
+                if DEBUG:
+                    write_to_pr(args.repo, args.pr, args.token, command)
+                exec_command(DIST_PATH, command)
+                if DEBUG:
+                    write_to_pr(args.repo, args.pr, args.token, "done")
+                record_test_config(cx, run_config)
+                time.sleep(5 * 60)
+        root_context.generate_result_zip()
+    except Exception as e:
+        if DEBUG:
             write_to_pr(args.repo, args.pr, args.token, f"Error: {e}")
-            continue
-        write_to_pr(args.repo, args.pr, args.token, f"Config: {machine_test_config}")
-        for run_config in get_exec_config(testConfig, machine_test_config):
-            cx = Context(root_context, DIST_PATH)
-            command = create_run_command(run_config)
-            if DEBUG:
-                write_to_pr(args.repo, args.pr, args.token, command)
-            exec_command(DIST_PATH, command)
-            if DEBUG:
-                write_to_pr(args.repo, args.pr, args.token, "done")
-            record_test_config(cx, run_config)
-            time.sleep(5 * 60)
-    root_context.generate_result_zip()
+        sys.exit(1)
     write_to_pr(args.repo, args.pr, args.token, "Performance tests done")
     for each in root_context.get_summary_paths():
         write_summary_to_pr(args.repo, args.pr, args.token, each)
