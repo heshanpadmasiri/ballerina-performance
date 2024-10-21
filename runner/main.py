@@ -48,7 +48,8 @@ def exec_command(cwd: str, command: List[str]):
     if DEBUG:
         os.system(f'{command_str} > output.log 2>&1')
     else:
-        subprocess.Popen(['nohup'] + command + ['&'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        full_command = f"nohup {' '.join(command)}"
+        subprocess.Popen(full_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def get_config(config_path:str)->TestConfig:
     with open(config_path) as f:
