@@ -3,7 +3,7 @@ import json
 import os
 import time
 import zipfile
-import subprocess
+import requests
 import argparse
 from typing import Generator, Optional, Tuple, TypedDict, List, Dict
 
@@ -215,6 +215,9 @@ class RootContext:
     def append_test_dir(self, path:str) -> None:
         self.result_dirs.append(path)
 
+    def get_summary_paths(self) -> List[str]:
+        return [f'{result_dir}/summary.md' for result_dir in self.result_dirs]
+
     def __get_result_dir_triple__(self) -> Generator[Tuple[str, Optional[str], Optional[str]], None, None]:
         for result_dir in self.result_dirs:
             test_config_path = f'{result_dir}/test_config.json'
@@ -278,10 +281,32 @@ def validate_configs(test_config: TestConfig, machine_configs:Dict[str, MachineC
 def get_arg_parser()->argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Run performance tests')
     parser.add_argument('config', type=str, help='path to the test config file', default=f'{SCRIPT_DIR}/config.json')
+    parser.add_argument('repo', type=str, help='repository name')
     parser.add_argument('pr', type=int, help='PR number')
     parser.add_argument('token', type=str, help='github token')
     parser.add_argument('--debug', action='store_true', help='debug mode')
     return parser
+
+def write_to_pr(repo: str, pr_number:int, github_token:str, message:str):
+    api_url = f"https://api.github.com/repos/{repo}/issues/{pr_number}/comments"
+
+    comment = {
+        "body": message
+    }
+    headers = {
+        "Authorization": f"token {github_token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    response = requests.post(api_url, json=comment, headers=headers)
+    if response.status_code == 201:
+        print(f"Successfully added comment to PR #{pr_number}.")
+    else:
+        print(f"Failed to add comment: {response.status_code}, {response.text}")
+
+def write_summary_to_pr(repo: str, pr_number:int, github_token:str, summary_path:str):
+    with open(summary_path) as f:
+        summary = f.read() 
+        write_to_pr(repo, pr_number, github_token, summary)
 
 def main():
     parser = get_arg_parser()
@@ -294,6 +319,7 @@ def main():
     machine_configs = get_machine_configs()
     validate_configs(testConfig, machine_configs)
     root_context = RootContext()
+    write_to_pr(args.repo, args.pr, args.token, "Performance tests started")
     for machine_name in testConfig['test_grid']['instance_types']:
         machine_test_config = get_test_config_for_machine(testConfig, machine_configs, machine_name);
         for run_config in get_exec_config(testConfig, machine_test_config):
@@ -302,6 +328,9 @@ def main():
             record_test_config(cx, run_config)
             time.sleep(5 * 60)
     root_context.generate_result_zip()
+    write_to_pr(args.repo, args.pr, args.token, "Performance tests done")
+    for each in root_context.get_summary_paths():
+        write_summary_to_pr(args.repo, args.pr, args.token, each)
 
 if __name__ == '__main__':
     main()

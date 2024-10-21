@@ -51,8 +51,7 @@ def exec_command(cwd: str, command: List[str]):
             stdout=devnull, 
             stderr=devnull, 
             stdin=devnull, 
-            start_new_session=True,  # Detach from parent
-            preexec_fn=os.setpgrp  # Detach process group on Unix-like systems
+            preexec_fn=os.setpgrp
         )
         print(f'Process started with PID: {process.pid}')
 
@@ -80,4 +79,13 @@ if __name__ == '__main__':
     machine_configs = get_machine_configs()
     validate_configs(testConfig, machine_configs)
     cwd = os.getcwd()
-    exec_command(os.getcwd(), ['python3', 'runner.py', 'config.json', '123', 'token'])
+    github_token = os.getenv('GITHUB_TOKEN')
+    pr_number = os.getenv('PR_NUMBER')  # PR number
+    repo = os.getenv('GITHUB_REPOSITORY')  # e.g., 'owner/repo'
+    if not repo:
+        raise ValueError('GITHUB_REPOSITORY not found')
+    if not pr_number:
+        raise ValueError('PR_NUMBER not found')
+    if not github_token:
+        raise ValueError('GITHUB_TOKEN not found')
+    exec_command(os.getcwd(), ['python3', 'runner.py', 'config.json', repo, pr_number, github_token])

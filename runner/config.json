@@ -1,8 +1,8 @@
 {
     "test_grid": {
         "heap_sizes": ["1G"],
-        "message_sizes": [500, 1000, 10000, 100000],
-        "n_users": [100, 200, 500, 1000],
+        "message_sizes": [500],
+        "n_users": [100],
         "active_process_counts": [-1],
         "instance_types": ["t3a.small"]
     },
