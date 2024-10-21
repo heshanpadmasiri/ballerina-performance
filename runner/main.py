@@ -24,7 +24,7 @@ class MachineConfig(TypedDict):
     cpu: int
     arch: str
 
-DEBUG = True
+DEBUG = False
 DIST_PATH = os.path.abspath('..')
 BAL_START_SCRIPT_PATH = f'{DIST_PATH}/ballerina/ballerina-start.sh'
 SCRIPT_PATH = os.path.abspath(__file__)
