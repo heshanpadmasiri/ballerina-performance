@@ -1,11 +1,21 @@
 #!/usr/bin/env python
+import argparse
 import json
 import os
+import requests
+import sys
 import time
 import zipfile
-import requests
-import argparse
 from typing import Generator, Optional, Tuple, TypedDict, List, Dict
+
+DEBUG = False
+DIST_PATH = os.path.abspath('..')
+BAL_START_SCRIPT_PATH = f'{DIST_PATH}/ballerina/ballerina-start.sh'
+SCRIPT_PATH = os.path.abspath(__file__)
+SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
+DIST_NAME = 'ballerina-performance-distribution-1.1.1-SNAPSHOT'
+DIST_ZIP_PATH = os.path.abspath(f'{DIST_PATH}/../{DIST_NAME}.tar.gz')
+CLOUD_FORMATION_COMMON_PATH = f'{DIST_PATH}/cloudformation/cloudformation-common.sh'
 
 class TestGrid(TypedDict):
     heap_sizes: List[str]
@@ -41,15 +51,6 @@ class ExecConfig(TypedDict):
     message_size: str
     heap_size: str
     machine_name: str
-
-DEBUG = False
-DIST_PATH = os.path.abspath('..')
-BAL_START_SCRIPT_PATH = f'{DIST_PATH}/ballerina/ballerina-start.sh'
-SCRIPT_PATH = os.path.abspath(__file__)
-SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
-DIST_NAME = 'ballerina-performance-distribution-1.1.1-SNAPSHOT'
-DIST_ZIP_PATH = os.path.abspath(f'{DIST_PATH}/../{DIST_NAME}.tar.gz')
-CLOUD_FORMATION_COMMON_PATH = f'{DIST_PATH}/cloudformation/cloudformation-common.sh'
 
 def get_machine_data(machine_configs: Dict[str, MachineConfig], machine_name: str) -> MachineConfig:
     machine_data = machine_configs[machine_name]

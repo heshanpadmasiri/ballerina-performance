@@ -2,7 +2,6 @@
 import json
 import os
 import subprocess
-import sys
 from typing import TypedDict, List, Dict
 
 class TestGrid(TypedDict):
@@ -24,7 +23,7 @@ class MachineConfig(TypedDict):
     cpu: int
     arch: str
 
-DEBUG = False
+DEBUG = True
 DIST_PATH = os.path.abspath('..')
 BAL_START_SCRIPT_PATH = f'{DIST_PATH}/ballerina/ballerina-start.sh'
 SCRIPT_PATH = os.path.abspath(__file__)
@@ -44,16 +43,19 @@ def validate_paths():
         raise FileNotFoundError(f'{CLOUD_FORMATION_COMMON_PATH} not found')
 
 def exec_command(cwd: str, command: List[str]):
-    with open(os.devnull, 'wb') as devnull:
-        process = subprocess.Popen(
-            command, 
-            cwd=cwd, 
-            stdout=devnull, 
-            stderr=devnull, 
-            stdin=devnull, 
-            preexec_fn=os.setpgrp
-        )
-        print(f'Process started with PID: {process.pid}')
+    if DEBUG:
+        subprocess.run(command, cwd=cwd)
+    else:
+        with open(os.devnull, 'wb') as devnull:
+            process = subprocess.Popen(
+                command, 
+                cwd=cwd, 
+                stdout=devnull, 
+                stderr=devnull, 
+                stdin=devnull, 
+                preexec_fn=os.setpgrp
+            )
+            print(f'Process started with PID: {process.pid}')
 
 def get_config(config_path:str)->TestConfig:
     with open(config_path) as f:
@@ -88,4 +90,7 @@ if __name__ == '__main__':
         raise ValueError('PR_NUMBER not found')
     if not github_token:
         raise ValueError('GITHUB_TOKEN not found')
-    exec_command(os.getcwd(), ['python3', 'runner.py', 'config.json', repo, pr_number, github_token, "--debug"])
+    command = ['python3', 'runner.py', 'config.json', repo, pr_number, github_token]
+    if DEBUG:
+        command.append("--debug")
+    exec_command(os.getcwd(), command)
