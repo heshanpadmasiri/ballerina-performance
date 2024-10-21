@@ -319,7 +319,11 @@ def main():
     root_context = RootContext()
     write_to_pr(args.repo, args.pr, args.token, "Performance tests started")
     for machine_name in testConfig['test_grid']['instance_types']:
-        machine_test_config = get_test_config_for_machine(testConfig, machine_configs, machine_name);
+        try:
+            machine_test_config = get_test_config_for_machine(testConfig, machine_configs, machine_name);
+        except Exception as e:
+            write_to_pr(args.repo, args.pr, args.token, f"Error: {e}")
+            continue
         write_to_pr(args.repo, args.pr, args.token, f"Config: {machine_test_config}")
         for run_config in get_exec_config(testConfig, machine_test_config):
             cx = Context(root_context, DIST_PATH)
