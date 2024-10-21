@@ -44,7 +44,7 @@ function usage() {
 while getopts "p:b:m:h" opts; do
     case $opts in
     p)
-        ballerina_path=${OPTARG}
+        ballerina_path=/home/ubuntu/ballerina-performance-distribution-1.1.1-SNAPSHOT/ballerina/bal
         ;;
     b)
         ballerina_file=${OPTARG}
@@ -66,15 +66,15 @@ shift "$((OPTIND - 1))"
 
 bal_flags="$@"
 
-if [[ ! -d $ballerina_path ]]; then
-    echo "Please provide the Ballerina path."
-    exit 1
-fi
+#if [[ ! -d $ballerina_path ]]; then
+#    echo "Please provide the Ballerina path."
+#    exit 1
+#fi
 
-if [[ ! -f $ballerina_path/$ballerina_file ]]; then
-    echo "Please provide the Ballerina program."
-    exit 1
-fi
+#if [[ ! -f $ballerina_path/$ballerina_file ]]; then
+#    echo "Please provide the Ballerina program."
+#    exit 1
+#fi
 
 if [[ -z $heap_size ]]; then
     echo "Please provide the heap size for the Ballerina program."
@@ -94,27 +94,27 @@ if pgrep -f ballerina.*/bre >/dev/null; then
     pkill -9 -f ballerina.*/bre
 fi
 
-if [ ! -d "${ballerina_path}/logs" ]; then
-    mkdir ${ballerina_path}/logs
-fi
+#if [ ! -d "${ballerina_path}/logs" ]; then
+#    mkdir ${ballerina_path}/logs
+#fi
 
 log_files=(${ballerina_path}/logs/*)
-if [ ${#log_files[@]} -gt 1 ]; then
-    echo "Log files exists. Moving to /tmp/"
-    mv ${ballerina_path}/logs/* /tmp/
-fi
+#if [ ${#log_files[@]} -gt 1 ]; then
+#    echo "Log files exists. Moving to /tmp/"
+#    mv ${ballerina_path}/logs/* /tmp/
+#fi
 
 echo "Setting Heap to ${heap_size}"
 
 #echo "Enabling GC Logs"
-#export JAVA_OPTS="-XX:+PrintGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:${ballerina_path}/logs/gc.log"
+#export JAVA_OPTS="-XX:+PrintGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:/home/ubuntu/ballerina-performance-distribution-1.1.1-SNAPSHOT/ballerina/logs/gc.log"
 export JAVA_OPTS=" -Xms${heap_size} -Xmx${heap_size}"
-JAVA_OPTS+=" -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath="${ballerina_path}/logs/heap-dump.hprof""
+JAVA_OPTS+=" -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath="/home/ubuntu/ballerina-performance-distribution-1.1.1-SNAPSHOT/ballerina/heap-dump.hprof""
 
 ballerina_command="bal run ${bal_flags} ${ballerina_file}"
 echo "Starting Ballerina: $ballerina_command"
 cd $ballerina_path
-nohup $ballerina_command &>${ballerina_path}/logs/ballerina.log &
+nohup $ballerina_command &>/home/ubuntu/ballerina-performance-distribution-1.1.1-SNAPSHOT/ballerina/ballerina.log &
 
 # TODO Do a curl and check if service is started
 echo "Waiting to make sure that the server is ready to accept requests."
@@ -127,4 +127,4 @@ done
 
 # Wait few more seconds to get logs
 sleep 5
-tail -10 ${ballerina_path}/logs/ballerina.log
+tail -10 /home/ubuntu/ballerina-performance-distribution-1.1.1-SNAPSHOT/ballerina/ballerina.log

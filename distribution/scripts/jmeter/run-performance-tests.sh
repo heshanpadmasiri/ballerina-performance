@@ -133,6 +133,19 @@ declare -A test_scenario7=(
     [backend_flags]="--ssl --key-store-file $HOME/ballerinaKeystore.p12 --key-store-password ballerina"
     [skip]=false
 )
+declare -A test_scenario8=(
+    [name]="h1_h1_content_based_routing"
+    [display_name]="Content based routing HTTPS service (h1 -> h1)"
+    [description]="An HTTPS Service, which does content based routing to an HTTPS back-end service."
+    [bal]="h1_h1_content_based_routing.jar"
+    [bal_flags]=""
+    [path]="/passthrough"
+    [jmx]="http-post-request.jmx"
+    [protocol]="https"
+    [use_backend]=true
+    [backend_flags]="--ssl --key-store-file $HOME/ballerinaKeystore.p12 --key-store-password ballerina"
+    [skip]=false
+)
 
 function before_execute_test_scenario() {
     local bal_file=${scenario[bal]}
@@ -143,14 +156,14 @@ function before_execute_test_scenario() {
     jmeter_params+=("payload=$HOME/${msize}B.json" "response_size=${msize}B" "protocol=$protocol")
     JMETER_JVM_ARGS="-Xbootclasspath/p:/opt/alpnboot/alpnboot.jar"
     echo "Starting Ballerina Service. Ballerina Program: $bal_file, Heap: $heap, Flags: ${bal_flags:-N/A}"
-    ssh $ballerina_ssh_host "sudo ./ballerina/ballerina-start.sh -p $HOME/ballerina/bal -b $bal_file -m $heap -- $bal_flags"
+    ssh $ballerina_ssh_host "sudo /home/ubuntu/ballerina-performance-distribution-1.1.1-SNAPSHOT/ballerina/ballerina-start.sh -p /usr/bin/bal -b $bal_file -m $heap -- $bal_flags"
 }
 
 function after_execute_test_scenario() {
     write_server_metrics ballerina $ballerina_ssh_host ballerina.*/bre
-    download_file $ballerina_ssh_host ballerina/bal/logs/ballerina.log ballerina.log
-    download_file $ballerina_ssh_host ballerina/bal/logs/gc.log ballerina_gc.log
-    download_file $ballerina_ssh_host ballerina/bal/logs/heap-dump.hprof ballerina_heap_dump.hprof
+    download_file $ballerina_ssh_host ballerina/ballerina.log ballerina.log
+    download_file $ballerina_ssh_host ballerina/gc.log ballerina_gc.log
+    download_file $ballerina_ssh_host ballerina/heap-dump.hprof ballerina_heap_dump.hprof
 }
 
 test_scenarios
