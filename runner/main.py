@@ -2,6 +2,7 @@
 import json
 import os
 import subprocess
+import sys
 from typing import TypedDict, List, Dict
 
 class TestGrid(TypedDict):
@@ -46,15 +47,30 @@ def exec_command(cwd: str, command: List[str]):
     if DEBUG:
         subprocess.run(command, cwd=cwd)
     else:
-        with open("log.log", 'w') as f:
-            process = subprocess.Popen(
-                command, 
-                cwd=cwd, 
-                stdout=f, 
-                stderr=f, 
-                preexec_fn=os.setsid
-            )
-            print(f'Process started with PID: {process.pid}')
+        pid = os.fork()
+        if pid > 0:
+            # Exit parent
+            sys.exit(0)
+
+        # Detach from terminal by starting a new session
+        os.setsid()
+
+        # Second fork
+        pid = os.fork()
+        if pid > 0:
+            # Exit the second parent
+            sys.exit(0)
+
+        # Redirect file descriptors to /dev/null to fully detach from the terminal
+        sys.stdout.flush()
+        sys.stderr.flush()
+        with open(os.devnull, 'wb', 0) as devnull:
+            os.dup2(devnull.fileno(), sys.stdin.fileno())
+            os.dup2(devnull.fileno(), sys.stdout.fileno())
+            os.dup2(devnull.fileno(), sys.stderr.fileno())
+
+        # Start the actual subprocess
+        subprocess.Popen(command, cwd=cwd)
 
 def get_config(config_path:str)->TestConfig:
     with open(config_path) as f:
