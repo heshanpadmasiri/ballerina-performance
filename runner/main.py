@@ -52,7 +52,7 @@ def exec_command(cwd: str, command: List[str]):
                 cwd=cwd, 
                 stdout=f, 
                 stderr=f, 
-                preexec_fn=os.setpgrp
+                preexec_fn=os.setsid
             )
             print(f'Process started with PID: {process.pid}')
 
