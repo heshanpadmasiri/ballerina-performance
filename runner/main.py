@@ -24,7 +24,7 @@ class MachineConfig(TypedDict):
     cpu: int
     arch: str
 
-DEBUG = False
+DEBUG = True
 DIST_PATH = os.path.abspath('..')
 BAL_START_SCRIPT_PATH = f'{DIST_PATH}/ballerina/ballerina-start.sh'
 SCRIPT_PATH = os.path.abspath(__file__)
@@ -44,10 +44,10 @@ def validate_paths():
         raise FileNotFoundError(f'{CLOUD_FORMATION_COMMON_PATH} not found')
 
 def exec_command(cwd: str, command: List[str]):
+    command_str = ' '.join(command)
     if DEBUG:
-        subprocess.run(command, cwd=cwd)
+        os.system(f'{command_str} > output.log 2>&1')
     else:
-        command_str = ' '.join(command)
         os.system(f'{command_str} > output.log 2>&1 &')
 
 def get_config(config_path:str)->TestConfig:
