@@ -88,4 +88,4 @@ if __name__ == '__main__':
         raise ValueError('PR_NUMBER not found')
     if not github_token:
         raise ValueError('GITHUB_TOKEN not found')
-    exec_command(os.getcwd(), ['python3', 'runner.py', 'config.json', repo, pr_number, github_token])
+    exec_command(os.getcwd(), ['python3', 'runner.py', 'config.json', repo, pr_number, github_token, "--debug"])

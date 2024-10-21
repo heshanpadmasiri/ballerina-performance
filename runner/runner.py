@@ -168,8 +168,6 @@ def create_run_command(exec_config: ExecConfig) -> str:
     command.append("-i " + exec_config['bal_installer_path'])
     command.append("--")
     command.append(f"-d 360 -w 180 {exec_config['user_count']} {exec_config['message_size']}  -s 0 -j 2G -k 2G -m {exec_config['heap_size']} -l 2G")
-    if DEBUG:
-        print(f"command: {command}")
     return ' '.join(command)
 
 def exec_command(cwd: str, command: str):
@@ -324,7 +322,12 @@ def main():
         machine_test_config = get_test_config_for_machine(testConfig, machine_configs, machine_name);
         for run_config in get_exec_config(testConfig, machine_test_config):
             cx = Context(root_context, DIST_PATH)
-            exec_command(DIST_PATH, create_run_command(run_config))
+            command = create_run_command(run_config)
+            if DEBUG:
+                write_to_pr(args.repo, args.pr, args.token, command)
+            exec_command(DIST_PATH, command)
+            if DEBUG:
+                write_to_pr(args.repo, args.pr, args.token, "done")
             record_test_config(cx, run_config)
             time.sleep(5 * 60)
     root_context.generate_result_zip()
