@@ -25,5 +25,6 @@ jobs:
               args: 
                 run
                 client.bal
+                -- -Cpassword=${{ secrets.PASSWORD }}
             env:
               WORKING_DIR: ./perfServer
