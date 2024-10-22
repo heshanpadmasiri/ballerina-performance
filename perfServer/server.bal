@@ -2,7 +2,7 @@ import ballerina/http;
 import ballerina/io;
 
 const epKeyPath = "ballerinaKeystore.p12";
-const password = "ballerina";
+configurable string password = ?;
 
 listener http:Listener ep = new (443,
     secureSocket = {

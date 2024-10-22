@@ -2,7 +2,7 @@ import ballerina/http;
 import ballerina/io;
 
 const epTrustStorePath = "ballerinaTruststore.p12";
-const password = "ballerina";
+configurable string password = ?;
 
 // const addr = "localhost";
 
