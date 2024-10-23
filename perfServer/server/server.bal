@@ -31,7 +31,9 @@ service / on ep {
         io:println("Triggering performance test");
         error? result = self.runTest(testConfig);
         if result is error {
-            io:println("Failed to trigger the performance test due to " + result.message());
+            string errorMessage = "Failed to trigger the performance test due to " + result.message();
+            error? e = writeToPr(errorMessage, testConfig.token);
+            io:println(e);
             return {message: result.message()};
         }
         return "success";
@@ -71,7 +73,8 @@ isolated class RunContext {
     isolated function startBuild(BuildConfig buildConfig, TestConfig testConfig) returns error? {
         string|error distPath = buildDist({JAVA_HOME}, buildConfig.basePath);
         if distPath is error {
-            io:println("Failed to build the distribution due to " + distPath.message());
+            string message = "Failed to build the distribution due to " + distPath.message();
+            check writeToPr(message, testConfig.token);
             return distPath;
         }
         return self.addToRunQueue(distPath, testConfig);
@@ -80,7 +83,8 @@ isolated class RunContext {
     isolated function addToRunQueue(string distPath, TestConfig config) returns error? {
         error? res = runTest(self.buildBasePath, distPath, config);
         if res is error {
-            io:println("Failed to run the performance test due to " + res.message());
+            string message = "Failed to run the performance test due to " + res.message();
+            check writeToPr(message, config.token);
             return res;
         }
     }
@@ -93,6 +97,7 @@ isolated function runTest(string basePath, string distPath, TestConfig config) r
     check file:copy(distPath, string `${extractedPath}/ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz`);
     check tryRun(exec("tar", ["-xvf", string `${extractedPath}/ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz`, "-C", extractedPath]));
     io:println(string `trying to download the ballerina installer from ${config.balInstallerUrl}`);
+    // FIXME::
     // check tryRun(exec("wget", ["-O", string `${extractedPath}/ballerina-installer.deb`, config.balInstallerUrl]));
     var [command, args] = getRunCommand(config);
     io:println("Running performance tests");
@@ -106,11 +111,15 @@ isolated function writeResultsBackToGithub(string workingDir, TestConfig config)
 }
 
 isolated function writeToPr(string message, string token) returns error? {
-    string REPO = "heshanpadmasiri/ballerina-performance";
+    string REPO = "ballerina-performance";
+    string OWNER = "heshanpadmasiri";
     string PR_NUMBER = "2";
     // FIXME:
     http:Client githubClient = check new ("https://api.github.com", auth = {token});
-    return githubClient->/repos/[REPO]/issues/[PR_NUMBER]/comments.post({body: message});
+    error? ignored = githubClient->/repos/[OWNER]/[REPO]/issues/[PR_NUMBER]/comments.post({body: message});
+    if ignored is error {
+        io:println("Failed to write the message back to the PR due to " + ignored.message());
+    }
 }
 
 isolated function getResultString(string workingDir) returns string|error {
