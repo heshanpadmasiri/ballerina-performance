@@ -5,6 +5,7 @@ const epTrustStorePath = "ballerinaTruststore.p12";
 configurable string password = ?;
 configurable string host = "localhost";
 configurable int port = 9090;
+configurable string token = ?;
 
 public function main() returns error? {
     http:Client 'client = check new (string `${host}:${port}`,
@@ -22,6 +23,7 @@ public function main() returns error? {
         heapSize: 1,
         concurrentUsers: [100],
         messageSizes: [100],
+        token,
         balInstallerUrl: "https://dist.ballerina.io/downloads/2201.10.2/ballerina-2201.10.2-swan-lake-linux-x64.deb"
     };
     // FIXME: create issue for this, not working with PerfTestTiggerResult
@@ -43,6 +45,7 @@ type TestConfig readonly & record {|
     int[] concurrentUsers;
     int[] messageSizes;
     string balInstallerUrl;
+    string token;
     string[] includeTests?;
     string[] excludeTests?;
 |};

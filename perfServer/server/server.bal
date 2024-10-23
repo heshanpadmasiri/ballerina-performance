@@ -60,6 +60,10 @@ type BuildConfig readonly & record {|
 isolated class RunContext {
     private final string buildBasePath = "./buildArtifacts";
 
+    function init() {
+        checkpanic createDirIfNotExists(self.buildBasePath);
+    }
+
     isolated function initTest(BuildConfig buildConfig, TestConfig testConfig) {
         _ = start self.startBuild(buildConfig, testConfig);
     }
@@ -84,17 +88,38 @@ isolated class RunContext {
 
 isolated function runTest(string basePath, string distPath, TestConfig config) returns error? {
     io:println("Running performance test");
+    check writeToPr("Performance test triggered", config.token);
     string extractedPath = check file:createTempDir(dir = basePath);
     check file:copy(distPath, string `${extractedPath}/ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz`);
     check tryRun(exec("tar", ["-xvf", string `${extractedPath}/ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz`, "-C", extractedPath]));
-    check tryRun(exec("wget", ["-O", string `${extractedPath}/ballerina-installer.deb`, config.balInstallerUrl]));
+    io:println(string `trying to download the ballerina installer from ${config.balInstallerUrl}`);
+    // check tryRun(exec("wget", ["-O", string `${extractedPath}/ballerina-installer.deb`, config.balInstallerUrl]));
     var [command, args] = getRunCommand(config);
-    check tryRun(exec(command, args, cwd = string `extractedPath/ballerina-performance-distribution-1.1.1-SNAPSHOT`));
-    return file:remove(extractedPath, file:RECURSIVE);
+    io:println("Running performance tests");
+    string workingDir = string `${extractedPath}/ballerina-performance-distribution-1.1.1-SNAPSHOT`;
+    check tryRun(exec(command, args, cwd = workingDir, env = {"AWS_PAGER": ""}));
+}
+
+isolated function writeResultsBackToGithub(string workingDir, TestConfig config) returns error? {
+    string resultString = check getResultString(workingDir);
+    return writeToPr(resultString, config.token);
+}
+
+isolated function writeToPr(string message, string token) returns error? {
+    string REPO = "heshanpadmasiri/ballerina-performance";
+    string PR_NUMBER = "2";
+    // FIXME:
+    http:Client githubClient = check new ("https://api.github.com", auth = {token});
+    return githubClient->/repos/[REPO]/issues/[PR_NUMBER]/comments.post({body: message});
+}
+
+isolated function getResultString(string workingDir) returns string|error {
+    return "done";
 }
 
 isolated function getRunCommand(TestConfig config) returns [string, string[]] {
     // FIXME: user count and message size
+    // FIXME: deb
     string command = "./cloudformation/run-performance-tests.sh";
     string[] args = [
         "-u heshanp@wso2.com",
@@ -111,12 +136,12 @@ isolated function getRunCommand(TestConfig config) returns [string, string[]] {
         "-S c5.xlarge",
         "-N c5.xlarge",
         string `-B ${config.vm}`,
-        "-i ../ballerina-installer.deb",
+        string `-i ${resourcePrefix}/ballerina-2201.10.2-swan-lake-linux-x64.deb`,
         "--",
         "-d 360",
         "-w 180",
-        "-u 100",
-        "-b 500",
+        "-u 10",
+        "-b 50",
         "-s 0",
         "-j 2G",
         "-k 2G",
@@ -228,12 +253,12 @@ isolated function buildBallerinaPerformance(RunConfig config, string ballerinaPe
     }
 }
 
-isolated function exec(string command, string[] args, RunConfig? config = (), string? cwd = ()) returns os:Process|error {
+isolated function exec(string command, string[] args, os:EnvProperties? env = (), string? cwd = ()) returns os:Process|error {
     if cwd == () {
         io:println(string `${command} ${" ".join(...args)}`);
         return os:exec({value: command, arguments: args});
     }
-    if config == () {
+    if env == () {
         string commandLine = string `cd ${cwd} && ${command} ${" ".join(...args)}`;
         io:println(commandLine);
         return os:exec({
@@ -246,7 +271,7 @@ isolated function exec(string command, string[] args, RunConfig? config = (), st
     return os:exec({
                        value: "sh",
                        arguments: ["-c", commandLine]
-                   }, config);
+                   }, env);
 }
 
 isolated function cloneRepository(string url, string branch, string targetPath) returns error? {
@@ -271,6 +296,7 @@ type TestConfig readonly & record {|
     int[] concurrentUsers;
     int[] messageSizes;
     string balInstallerUrl;
+    string token;
     string[] includeTests?;
     string[] excludeTests?;
 |};
