@@ -17,8 +17,15 @@ public function main() returns error? {
         }
     );
 
+    TestConfig config = {
+        vm: "t3a.small",
+        heapSize: 1,
+        concurrentUsers: [100],
+        messageSizes: [100],
+        balInstallerUrl: "https://dist.ballerina.io/downloads/2201.10.2/ballerina-2201.10.2-swan-lake-linux-x64.deb"
+    };
     // FIXME: create issue for this, not working with PerfTestTiggerResult
-    string|record {|string message;|} response = check 'client->/triggerPerfTest();
+    string|record {|string message;|} response = check 'client->/triggerPerfTest.post(config);
     io:println(response);
     if response !is string {
         return error(string `failed to trigger the performance test due to ${response.message}`);
@@ -27,3 +34,16 @@ public function main() returns error? {
 }
 
 public type PerfTestTiggerResult "success"|record {string message;};
+
+type VM "t3a.small";
+
+type TestConfig readonly & record {|
+    VM vm;
+    int heapSize;
+    int[] concurrentUsers;
+    int[] messageSizes;
+    string balInstallerUrl;
+    string[] includeTests?;
+    string[] excludeTests?;
+|};
+

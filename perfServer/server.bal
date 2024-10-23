@@ -6,9 +6,10 @@ import ballerina/os;
 const epKeyPath = "ballerinaKeystore.p12";
 configurable string password = ?;
 configurable string JAVA_HOME = "/home/ubuntu/jdk/jdk-17.0.13+11";
-configurable int PORT = 443;
+configurable int port = 443;
+configurable string resourcePrefix = "/home/ubuntu/perf";
 
-listener http:Listener ep = new (PORT,
+listener http:Listener ep = new (port,
     secureSocket = {
         key: {
             path: epKeyPath,
@@ -23,12 +24,12 @@ service / on ep {
 
     function init() {
         self.basePath = "./runArtifacts";
-        checkpanic file:createDir(self.basePath);
+        checkpanic createDirIfNotExists(self.basePath);
     }
 
-    resource function get triggerPerfTest() returns PerfTestTiggerResult {
+    resource function post triggerPerfTest(TestConfig testConfig) returns PerfTestTiggerResult {
         io:println("Triggering performance test");
-        error? result = self.runTest();
+        error? result = self.runTest(testConfig);
         if result is error {
             io:println("Failed to trigger the performance test due to " + result.message());
             return {message: result.message()};
@@ -36,8 +37,14 @@ service / on ep {
         return "success";
     }
 
-    isolated function runTest() returns error? {
-        self.runContext.initTest({runConfig: {JAVA_HOME}, basePath: self.basePath});
+    isolated function runTest(TestConfig testConfig) returns error? {
+        self.runContext.initTest({runConfig: {JAVA_HOME}, basePath: self.basePath}, testConfig);
+    }
+}
+
+isolated function createDirIfNotExists(string path) returns error? {
+    if !check file:test(path, file:EXISTS) {
+        return file:createDir(path);
     }
 }
 
@@ -45,32 +52,72 @@ type RunConfig record {|
     string JAVA_HOME;
 |};
 
-type Build readonly & record {|
+type BuildConfig readonly & record {|
     RunConfig runConfig;
     string basePath;
 |};
 
-type TestConfig record {|
-|};
-
 isolated class RunContext {
+    private final string buildBasePath = "./buildArtifacts";
 
-    isolated function initTest(Build build) {
-        future<error?> result = start self.startBuild(build);
+    isolated function initTest(BuildConfig buildConfig, TestConfig testConfig) {
+        _ = start self.startBuild(buildConfig, testConfig);
     }
 
-    isolated function startBuild(Build build) returns error? {
-        string|error distPath = buildDist({JAVA_HOME}, build.basePath);
+    isolated function startBuild(BuildConfig buildConfig, TestConfig testConfig) returns error? {
+        string|error distPath = buildDist({JAVA_HOME}, buildConfig.basePath);
         if distPath is error {
             io:println("Failed to build the distribution due to " + distPath.message());
             return distPath;
         }
-        return self.addToRunQueue(distPath, {});
+        return self.addToRunQueue(distPath, testConfig);
     }
 
     isolated function addToRunQueue(string distPath, TestConfig config) returns error? {
-        io:println(distPath);
+        return runTest(self.buildBasePath, distPath, config);
     }
+}
+
+isolated function runTest(string basePath, string distPath, TestConfig config) returns error? {
+    string extractedPath = check file:createTempDir(dir = basePath);
+    check file:copy(distPath, string `${extractedPath}/ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz`);
+    check tryRun(exec("tar", ["-xvf", string `${extractedPath}/ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz`, "-C", extractedPath]));
+    check tryRun(exec("wget", ["-O", string `${extractedPath}/ballerina-installer.deb`, config.balInstallerUrl]));
+    var [command, args] = getRunCommand(config);
+    check tryRun(exec(command, args, cwd = string `extractedPath/ballerina-performance-distribution-1.1.1-SNAPSHOT`));
+}
+
+isolated function getRunCommand(TestConfig config) returns [string, string[]] {
+    // FIXME: user count and message size
+    string command = "./cloudformation/run-performance-tests.sh";
+    string[] args = [
+        "-u heshanp@wso2.com",
+        "-f ../ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz ",
+        string `-k ${resourcePrefix}/bhashinee-ballerina.pem`,
+        "-n bhashinee-ballerina",
+        string `-j ${resourcePrefix}/apache-jmeter-5.1.1.tgz`,
+        string `-o ${resourcePrefix}/jdk-8u345-linux-x64.tar.gz`,
+        string `-g ${resourcePrefix}/gcviewer-1.36.jar`,
+        "-s 'wso2-ballerina-test1-'",
+        "-b ballerina-sl-9",
+        "-r 'us-east-1'",
+        "-J c5.xlarge",
+        "-S c5.xlarge",
+        "-N c5.xlarge",
+        string `-B ${config.vm}`,
+        "-i ../ballerina-installer.deb",
+        "--",
+        "-d 360",
+        "-w 180",
+        "-u 100",
+        "-b 500",
+        "-s 0",
+        "-j 2G",
+        "-k 2G",
+        "-l 2G",
+        string `-m ${config.heapSize}G`
+    ];
+    return [command, args];
 }
 
 isolated function buildDist(RunConfig runConfig, string basePath) returns string|error {
@@ -208,3 +255,16 @@ isolated function cloneRepository(string url, string branch, string targetPath) 
 
 // TODO: move to common
 public type PerfTestTiggerResult "success"|record {string message;};
+
+type VM "t3a.small";
+
+type TestConfig readonly & record {|
+    VM vm;
+    int heapSize;
+    int[] concurrentUsers;
+    int[] messageSizes;
+    string balInstallerUrl;
+    string[] includeTests?;
+    string[] excludeTests?;
+|};
+
