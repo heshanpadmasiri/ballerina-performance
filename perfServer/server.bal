@@ -180,14 +180,18 @@ isolated function exec(string command, string[] args, RunConfig? config = (), st
         return os:exec({value: command, arguments: args});
     }
     if config == () {
+        string commandLine = string `cd ${cwd} && ${command} ${" ".join(...args)}`;
+        io:println(commandLine);
         return os:exec({
                            value: "sh",
-                           arguments: ["-c", string `cd ${cwd} && ${command} ${" ".join(...args)}`]
+                           arguments: ["-c", commandLine]
                        });
     }
+    string commandLine = string `cd ${cwd} && ${command} ${" ".join(...args)}`;
+    io:println(commandLine);
     return os:exec({
                        value: "sh",
-                       arguments: ["-c", string `cd ${cwd} && ${command} ${" ".join(...args)}`]
+                       arguments: ["-c", commandLine]
                    }, config);
 }
 

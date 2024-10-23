@@ -3,11 +3,11 @@ import ballerina/io;
 
 const epTrustStorePath = "ballerinaTruststore.p12";
 configurable string password = ?;
-configurable string URL = "54.147.32.108";
-configurable int PORT = 443;
+configurable string host = "localhost";
+configurable int port = 9090;
 
 public function main() returns error? {
-    http:Client 'client = check new (string `${URL}:${PORT}`,
+    http:Client 'client = check new (string `${host}:${port}`,
         secureSocket = {
             cert: {
                 path: epTrustStorePath,
