@@ -74,17 +74,23 @@ isolated class RunContext {
     }
 
     isolated function addToRunQueue(string distPath, TestConfig config) returns error? {
-        return runTest(self.buildBasePath, distPath, config);
+        error? res = runTest(self.buildBasePath, distPath, config);
+        if res is error {
+            io:println("Failed to run the performance test due to " + res.message());
+            return res;
+        }
     }
 }
 
 isolated function runTest(string basePath, string distPath, TestConfig config) returns error? {
+    io:println("Running performance test");
     string extractedPath = check file:createTempDir(dir = basePath);
     check file:copy(distPath, string `${extractedPath}/ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz`);
     check tryRun(exec("tar", ["-xvf", string `${extractedPath}/ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz`, "-C", extractedPath]));
     check tryRun(exec("wget", ["-O", string `${extractedPath}/ballerina-installer.deb`, config.balInstallerUrl]));
     var [command, args] = getRunCommand(config);
     check tryRun(exec(command, args, cwd = string `extractedPath/ballerina-performance-distribution-1.1.1-SNAPSHOT`));
+    return file:remove(extractedPath, file:RECURSIVE);
 }
 
 isolated function getRunCommand(TestConfig config) returns [string, string[]] {
@@ -224,6 +230,7 @@ isolated function buildBallerinaPerformance(RunConfig config, string ballerinaPe
 
 isolated function exec(string command, string[] args, RunConfig? config = (), string? cwd = ()) returns os:Process|error {
     if cwd == () {
+        io:println(string `${command} ${" ".join(...args)}`);
         return os:exec({value: command, arguments: args});
     }
     if config == () {
