@@ -15,7 +15,7 @@ public function main() returns error? {
         }
     );
 
-    PerfTestTiggerResult response = check 'client->/triggerPerfTest();
+    string|record {|string message;|} response = check 'client->/triggerPerfTest();
     io:println(response);
     if response !is "success" {
         return error(string `failed to trigger the performance test due to {response.message}`);
