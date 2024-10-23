@@ -16,9 +16,10 @@ public function main() returns error? {
     );
 
     // FIXME: create issue for this, not working with PerfTestTiggerResult
-    string|record {|string message;|} response = check 'client->/triggerPerfTest();
+    "success"|record {|string message;|} response = check 'client->/triggerPerfTest();
+    io:println(response);
     if response !is "success" {
-        return error(string `failed to trigger the performance test due to {response.message}`);
+        return error(string `failed to trigger the performance test due to ${response.message}`);
     }
     io:println("Performance test triggered successfully");
 }
