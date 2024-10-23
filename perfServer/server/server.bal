@@ -9,6 +9,8 @@ configurable string JAVA_HOME = "/home/ubuntu/jdk/jdk-17.0.13+11";
 configurable int port = 443;
 configurable string resourcePrefix = "/home/ubuntu/perf";
 
+const string PERF_TAR_FILE = "ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz";
+
 listener http:Listener ep = new (port,
     secureSocket = {
         key: {
@@ -101,7 +103,7 @@ isolated function runTest(string basePath, string distPath, TestConfig config) r
     // check tryRun(exec("wget", ["-O", string `${extractedPath}/ballerina-installer.deb`, config.balInstallerUrl]));
     var [command, args] = getRunCommand(config);
     io:println("Running performance tests");
-    string workingDir = string `${extractedPath}/ballerina-performance-distribution-1.1.1-SNAPSHOT`;
+    string workingDir = string `${extractedPath}`;
     check tryRun(exec(command, args, cwd = workingDir, env = {"AWS_PAGER": ""}));
 }
 
@@ -132,7 +134,7 @@ isolated function getRunCommand(TestConfig config) returns [string, string[]] {
     string command = "./cloudformation/run-performance-tests.sh";
     string[] args = [
         "-u heshanp@wso2.com",
-        "-f ../ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz ",
+        "-f ./ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz ",
         string `-k ${resourcePrefix}/bhashinee-ballerina.pem`,
         "-n bhashinee-ballerina",
         string `-j ${resourcePrefix}/apache-jmeter-5.1.1.tgz`,
@@ -162,17 +164,17 @@ isolated function getRunCommand(TestConfig config) returns [string, string[]] {
 
 isolated function buildDist(RunConfig runConfig, string basePath) returns string|error {
     string artificatDir = check file:createTempDir(dir = basePath);
-    string ballerinaPerfDir = check file:createTempDir(dir = artificatDir);
+    string ballerinaPerfDir = check file:createTempDir(suffix = "ballerina-performance", dir = artificatDir);
     io:println("Cloning ballerina performance repository");
     check cloneRepository("https://github.com/heshanpadmasiri/ballerina-performance.git", "feat/automation", ballerinaPerfDir);
     io:println("Cloning performance common repository");
-    string perfCommonDir = check file:createTempDir(dir = artificatDir);
+    string perfCommonDir = check file:createTempDir(suffix = "performance-common", dir = artificatDir);
     check cloneRepository("https://github.com/heshanpadmasiri/performance-common.git", "ballerina-patch", perfCommonDir);
     io:println("Building distribution");
-    return buildDistribution(runConfig, ballerinaPerfDir, perfCommonDir);
+    return buildDistribution(runConfig, basePath, ballerinaPerfDir, perfCommonDir);
 }
 
-isolated function buildDistribution(RunConfig config, string ballerinaPerfDir, string perfCommonDir) returns string|error {
+isolated function buildDistribution(RunConfig config, string basePath, string ballerinaPerfDir, string perfCommonDir) returns string|error {
     io:println("Building performance common");
     check buildPerformanceCommon(config, perfCommonDir);
     string nettyPath = check getNettyPath(perfCommonDir);
@@ -181,8 +183,13 @@ isolated function buildDistribution(RunConfig config, string ballerinaPerfDir, s
     check buildBallerinaPerformance(config, ballerinaPerfDir);
     string perfDistPath = check getPerfDistPath(ballerinaPerfDir);
     io:println("Patching performance distribution");
-    check patchPerfDist(perfDistPath, nettyPath, payloadGenerator);
-    return perfDistPath;
+    // string newPerfDistpath = check patchPerfDist(basePath, perfDistPath, nettyPath, payloadGenerator, [
+    //             {sourcePath: string `${perfCommonDir}/distribution/scripts/cloudformation`, targetPath: "cloudformation"},
+    //             {sourcePath: string `${perfCommonDir}/distribution/scripts/jmeter`, targetPath: "jmeter"}
+    //         ]);
+    string newPerfDistpath = check patchPerfDist(basePath, perfDistPath, nettyPath, payloadGenerator);
+    // TODO: delete old perf dist
+    return newPerfDistpath;
 }
 
 type ScriptReplacement record {
@@ -190,10 +197,8 @@ type ScriptReplacement record {
     string targetPath;
 };
 
-isolated function patchPerfDist(string perfDistPath, string nettyPath, string payloadGeneratorPath, ScriptReplacement[] scriptReplacements = []) returns error? {
-    string tempDir = check file:createTempDir();
-    string extractDir = string `${tempDir}/extracted`;
-    check file:createDir(extractDir);
+isolated function patchPerfDist(string basePath, string perfDistPath, string nettyPath, string payloadGeneratorPath, ScriptReplacement[] scriptReplacements = []) returns string|error {
+    string extractDir = check file:createTempDir(suffix = "patched", dir = basePath);
     check tryRun(exec("tar", ["-xvf", perfDistPath, "-C", extractDir]));
     check file:copy(nettyPath, string `${extractDir}/netty-service/netty-http-echo-service-0.4.6-SNAPSHOT.jar`, file:REPLACE_EXISTING);
     check file:copy(payloadGeneratorPath, string `${extractDir}/dist/payloads/payload-generator-0.4.6-SNAPSHOT.jar`, file:REPLACE_EXISTING);
@@ -204,11 +209,14 @@ isolated function patchPerfDist(string perfDistPath, string nettyPath, string pa
         if !check file:test(sourcePath, file:IS_DIR) {
             check file:copy(sourcePath, string `${extractDir}/${targetPath}`, file:REPLACE_EXISTING);
         }
-        check file:remove(sourcePath, file:RECURSIVE);
-        check file:copy(sourcePath, string `${extractDir}/${targetPath}`);
+        string actualTargetPath = string `${extractDir}/${targetPath}`;
+        if !check file:test(actualTargetPath, file:IS_DIR) {
+            return error(string `Target path ${actualTargetPath} doesn't exists`);
+        }
+        check file:copy(sourcePath, actualTargetPath, file:REPLACE_EXISTING);
     }
-    check tryRun(exec("tar", ["-cvf", perfDistPath, "-C", extractDir, "."]));
-    check file:remove(tempDir, file:RECURSIVE);
+    check tryRun(exec("tar", ["-cvf", PERF_TAR_FILE, "-C", extractDir, "."]));
+    return extractDir;
 }
 
 isolated function tryRun(os:Process|error proc) returns error? {
@@ -222,7 +230,7 @@ isolated function tryRun(os:Process|error proc) returns error? {
 }
 
 isolated function getPerfDistPath(string ballerinaPerfDir) returns string|error {
-    string perfDistPath = string `${ballerinaPerfDir}/distribution/target/ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz`;
+    string perfDistPath = string `${ballerinaPerfDir}/distribution/target/${PERF_TAR_FILE}`;
     if !check file:test(perfDistPath, file:EXISTS) {
         return error(string ` Performance distribution path ${perfDistPath} doesn 't exists `);
     }
@@ -246,7 +254,7 @@ isolated function getPayloadGeneratorPath(string perfCommonDir) returns string|e
 }
 
 isolated function buildPerformanceCommon(RunConfig config, string perfCommonDir) returns error? {
-    os:Process proc = check exec("mvn", ["package"], config, perfCommonDir);
+    os:Process proc = check exec("mvn", ["clean", "package", "install", "-DskipTests"], config, perfCommonDir);
     int exitCode = check proc.waitForExit();
     if (exitCode != 0) {
         string message = check string:fromBytes(check proc.output(io:stderr));
@@ -255,7 +263,7 @@ isolated function buildPerformanceCommon(RunConfig config, string perfCommonDir)
 }
 
 isolated function buildBallerinaPerformance(RunConfig config, string ballerinaPerfDir) returns error? {
-    os:Process proc = check exec("mvn", ["package"], config, ballerinaPerfDir);
+    os:Process proc = check exec("mvn", ["clean", "package"], config, ballerinaPerfDir);
     int exitCode = check proc.waitForExit();
     if (exitCode != 0) {
         return error("Failed to build ballerina performance");
