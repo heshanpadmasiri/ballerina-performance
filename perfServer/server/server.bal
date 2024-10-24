@@ -15,6 +15,9 @@ configurable string ballerinaPerformanceBranch = "feat/automation";
 configurable string performanceCommonRepo = "heshanpadmasiri/performance-common.git";
 configurable string performanceCommonBranch = "ballerina-patch";
 
+configurable string keyStorePath = "./ballerinaKeystore.p12";
+configurable string trustStorePath = "./ballerinaTruststore.p12";
+
 const string PERF_TAR_FILE = "ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz";
 const string NETTY_JAR_FILE = "netty-http-echo-service-0.4.6-SNAPSHOT.jar";
 const string PAYLOD_GENERATOR_JAR_FILE = "payload-generator-0.4.6-SNAPSHOT.jar";
@@ -267,6 +270,8 @@ isolated function patchPerfDist(string basePath, string perfDistPath, string net
         }
         check file:copy(sourcePath, actualTargetPath, file:REPLACE_EXISTING);
     }
+    check file:copy(keyStorePath, string `${extractDir}/ballerinaKeystore.p12`, file:REPLACE_EXISTING);
+    check file:copy(trustStorePath, string `${extractDir}/ballerinaTruststore.p12`, file:REPLACE_EXISTING);
     check tryRun(exec("tar", ["-cvf", string `${extractDir}/${PERF_TAR_FILE}`, "-C", extractDir, "."]));
     return extractDir;
 }
