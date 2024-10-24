@@ -1,6 +1,7 @@
 import ballerina/file;
 import ballerina/http;
 import ballerina/io;
+import ballerina/lang.runtime as runtime;
 import ballerina/os;
 
 const epKeyPath = "ballerinaKeystore.p12";
@@ -95,15 +96,12 @@ isolated class RunContext {
 isolated function runTest(string basePath, string distPath, TestConfig config) returns error? {
     io:println("Running performance test");
     check writeToPr("Performance test triggered", config.token);
-    string extractedPath = check file:createTempDir(dir = basePath);
-    check file:copy(distPath, string `${extractedPath}/ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz`);
-    check tryRun(exec("tar", ["-xvf", string `${extractedPath}/ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz`, "-C", extractedPath]));
     io:println(string `trying to download the ballerina installer from ${config.balInstallerUrl}`);
     // FIXME::
     // check tryRun(exec("wget", ["-O", string `${extractedPath}/ballerina-installer.deb`, config.balInstallerUrl]));
     var [command, args] = getRunCommand(config);
     io:println("Running performance tests");
-    string workingDir = string `${extractedPath}`;
+    string workingDir = distPath;
     check tryRun(exec(command, args, cwd = workingDir, env = {"AWS_PAGER": ""}));
 }
 
@@ -118,7 +116,7 @@ isolated function writeToPr(string message, string token) returns error? {
     string PR_NUMBER = "2";
     // FIXME:
     http:Client githubClient = check new ("https://api.github.com", auth = {token});
-    error? ignored = githubClient->/repos/[OWNER]/[REPO]/issues/[PR_NUMBER]/comments.post({body: message});
+    json|error ignored = githubClient->/repos/[OWNER]/[REPO]/issues/[PR_NUMBER]/comments.post({body: message});
     if ignored is error {
         io:println("Failed to write the message back to the PR due to " + ignored.message());
     }
@@ -254,12 +252,16 @@ isolated function getPayloadGeneratorPath(string perfCommonDir) returns string|e
 }
 
 isolated function buildPerformanceCommon(RunConfig config, string perfCommonDir) returns error? {
-    os:Process proc = check exec("mvn", ["clean", "package", "install", "-DskipTests"], config, perfCommonDir);
-    int exitCode = check proc.waitForExit();
-    if (exitCode != 0) {
-        string message = check string:fromBytes(check proc.output(io:stderr));
-        return error(string `Failed to build performance common due to ${message}`);
-    }
+    os:Process _ = check exec("mvn", ["clean", "package", "install", "-DskipTests"], config, perfCommonDir);
+    io:println("waiting");
+    // FIXME: sleep for 10 minutes, becuase proc.WaitForExit() is not working properly when using -DskipTests
+    runtime:sleep(5 * 60);
+    io:println("done");
+    // int exitCode = check proc.waitForExit();
+    // if (exitCode != 0) {
+    //     string message = check string:fromBytes(check proc.output(io:stderr));
+    //     return error(string `Failed to build performance common due to ${message}`);
+    // }
 }
 
 isolated function buildBallerinaPerformance(RunConfig config, string ballerinaPerfDir) returns error? {
