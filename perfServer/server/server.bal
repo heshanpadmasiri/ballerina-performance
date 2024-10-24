@@ -213,7 +213,7 @@ isolated function patchPerfDist(string basePath, string perfDistPath, string net
         }
         check file:copy(sourcePath, actualTargetPath, file:REPLACE_EXISTING);
     }
-    check tryRun(exec("tar", ["-cvf", PERF_TAR_FILE, "-C", extractDir, "."]));
+    check tryRun(exec("tar", ["-cvf", string `${extractDir}/${PERF_TAR_FILE}`, "-C", extractDir, "."]));
     return extractDir;
 }
 
