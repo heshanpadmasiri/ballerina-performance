@@ -169,7 +169,7 @@ isolated function getRunCommand(TestConfig config) returns [string, string[]] {
     string command = "./cloudformation/run-performance-tests.sh";
     string[] args = [
         "-u heshanp@wso2.com",
-        "-f ./ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz ",
+        "-f ../ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz ",
         string `-k ${resourcePrefix}/bhashinee-ballerina.pem`,
         "-n bhashinee-ballerina",
         string `-j ${resourcePrefix}/apache-jmeter-5.1.1.tgz`,
@@ -272,7 +272,7 @@ isolated function patchPerfDist(string basePath, string perfDistPath, string net
     }
     check file:copy(keyStorePath, string `${extractDir}/ballerinaKeystore.p12`, file:REPLACE_EXISTING);
     check file:copy(trustStorePath, string `${extractDir}/ballerinaTruststore.p12`, file:REPLACE_EXISTING);
-    check tryRun(exec("tar", ["-cvf", string `${extractDir}/${PERF_TAR_FILE}`, "-C", extractDir, "."]));
+    check tryRun(exec("tar", ["-cvf", string `/home/ubuntu/${PERF_TAR_FILE}`, "-C", "/home/ubuntu", extractDir]));
     return extractDir;
 }
 
