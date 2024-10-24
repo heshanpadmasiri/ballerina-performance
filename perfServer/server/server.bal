@@ -162,7 +162,6 @@ isolated function getExcludeTests(TestConfig config) returns string? {
 }
 
 isolated function getRunCommand(TestConfig config) returns [string, string[]] {
-    // FIXME: user count and message size
     // FIXME: deb
     string command = "./cloudformation/run-performance-tests.sh";
     string[] args = [
@@ -229,11 +228,11 @@ isolated function buildDistribution(RunConfig config, string basePath, string ba
     check buildBallerinaPerformance(config, ballerinaPerfDir);
     string perfDistPath = check getPerfDistPath(ballerinaPerfDir);
     io:println("Patching performance distribution");
-    string newPerfDistpath = check patchPerfDist(basePath, perfDistPath, nettyPath, payloadGenerator, [
-                {sourcePath: string `${perfCommonDir}/distribution/scripts/cloudformation`, targetPath: "cloudformation"},
-                {sourcePath: string `${perfCommonDir}/distribution/scripts/jmeter`, targetPath: "jmeter"}
-            ]);
-    // string newPerfDistpath = check patchPerfDist(basePath, perfDistPath, nettyPath, payloadGenerator);
+    // string newPerfDistpath = check patchPerfDist(basePath, perfDistPath, nettyPath, payloadGenerator, [
+    //             {sourcePath: string `${perfCommonDir}/distribution/scripts/cloudformation`, targetPath: "cloudformation"},
+    //             {sourcePath: string `${perfCommonDir}/distribution/scripts/jmeter`, targetPath: "jmeter"}
+    //         ]);
+    string newPerfDistpath = check patchPerfDist(basePath, perfDistPath, nettyPath, payloadGenerator);
     // TODO: delete old perf dist
     return newPerfDistpath;
 }
@@ -243,11 +242,18 @@ type ScriptReplacement record {
     string targetPath;
 };
 
-isolated function patchPerfDist(string basePath, string perfDistPath, string nettyPath, string payloadGeneratorPath, ScriptReplacement[] scriptReplacements = []) returns string|error {
-    string extractDir = check file:createTempDir(suffix = "patched", dir = basePath);
+isolated function patchPerfDist(string basePath, string perfDistPath, string nettyPath, string? payloadGeneratorPath, ScriptReplacement[] scriptReplacements = []) returns string|error {
+    string extractDir = "/home/ubuntu/ballerina-performance-distribution-1.1.1-SNAPSHOT";
+    if check file:test(extractDir, file:EXISTS) {
+        check file:remove(extractDir, file:RECURSIVE);
+    }
+    check file:createDir(extractDir);
+
     check tryRun(exec("tar", ["-xvf", perfDistPath, "-C", extractDir]));
     check file:copy(nettyPath, string `${extractDir}/netty-service/${NETTY_JAR_FILE}`, file:REPLACE_EXISTING);
-    check file:copy(payloadGeneratorPath, string `${extractDir}/dist/payloads/${PAYLOD_GENERATOR_JAR_FILE}`, file:REPLACE_EXISTING);
+    if payloadGeneratorPath != () {
+        check file:copy(payloadGeneratorPath, string `${extractDir}/dist/payloads/${PAYLOD_GENERATOR_JAR_FILE}`, file:REPLACE_EXISTING);
+    }
     foreach var {sourcePath, targetPath} in scriptReplacements {
         if !check file:test(sourcePath, file:EXISTS) {
             return error(string `Source path ${sourcePath} doesn't exists`);
