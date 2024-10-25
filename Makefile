@@ -1,5 +1,8 @@
+PERFORMANCE_COMMON_REPO?=https://github.com/heshanpadmasiri/performance-common.git
+PERFORMANCE_COMMON_BRANCH?=ballerina-patch
 PERFORMANCE_COMMON_PATH?=../performance-common
-KEY_FILE_PREFIX?=/opt/homebrew/Cellar/ballerina/2201.9.2/libexec/distributions/ballerina-2201.10.0/bre/security
+JAVA_HOME?=/home/ubuntu/jdk/jdk-17.0.13+11
+KEY_FILE_PREFIX?=/home/ubuntu/perf
 KEY_FILES=$(KEY_FILE_PREFIX)/*.p12
 NETTY_JAR_WITH_DEP?=netty-http-echo-service-0.4.6-SNAPSHOT-jar-with-dependencies.jar
 NETTY_JAR=netty-http-echo-service-0.4.6-SNAPSHOT.jar
@@ -14,6 +17,7 @@ PERF_TAR=$(DIST_NAME).tar.gz
 PERF_TAR_PATH=./distribution/target/$(PERF_TAR)
 BUILD_DIR=./build
 BAL_VER?=2201.10.1
+BAL_INSTALLER_NAME?=ballerina-$(BAL_VER)-swan-lake-linux-x64.deb
 DEB_URL?=https://dist.ballerina.io/downloads/$(BAL_VER)/ballerina-$(BAL_VER)-swan-lake-linux-x64.deb
 UNPACK_STAMP=.unpack.stamp
 NETTY_REPLACE_STAMP=.netty.stamp
@@ -24,13 +28,21 @@ REPACK_STAMP=.repack.stamp
 DEB_STAMP=.deb.stamp
 DIST_STAMP=.dist.stamp
 
+
+run: $(DIST_STAMP)
+	chmod +x run.sh
+	./run.sh $(DIST_NAME) $(BAL_INSTALLER_NAME)
+
 dist: $(DIST_STAMP)
+
+$(PERFORMANCE_COMMON_PATH):
+	git clone --depth=1 $(PERFORMANCE_COMMON_REPO) $(PERFORMANCE_COMMON_PATH) -b $(PERFORMANCE_COMMON_BRANCH)
 
 $(DIST_STAMP): $(REPACK_STAMP) $(DEB_STAMP)
 	tar -czf $(BUILD_DIR)/dist.tar.gz -C $(BUILD_DIR) $(PERF_TAR) ballerina-$(BAL_VER)-swan-lake-linux-x64.deb
 	touch $(DIST_STAMP)
 
-$(NETTY_JAR_PATH) $(PAYLOAD_GENERATOR_JAR_PATH):
+$(NETTY_JAR_PATH) $(PAYLOAD_GENERATOR_JAR_PATH): $(PERFORMANCE_COMMON_PATH)
 	cd $(PERFORMANCE_COMMON_PATH) && mvn package
 
 $(DEB_STAMP): $(REPACK_STAMP)

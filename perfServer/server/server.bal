@@ -10,7 +10,7 @@ configurable string JAVA_HOME = "/home/ubuntu/jdk/jdk-17.0.13+11";
 configurable int port = 443;
 configurable string resourcePrefix = "/home/ubuntu/perf";
 
-configurable string ballerinaPerformanceRepo = "heshanpadmasiri/ballerina-performance.git";
+configurable string ballerinaPerformanceRepo = "heshanpadmasiri/ballerina-performance.s;
 configurable string ballerinaPerformanceBranch = "feat/automation";
 configurable string performanceCommonRepo = "heshanpadmasiri/performance-common.git";
 configurable string performanceCommonBranch = "ballerina-patch";
@@ -87,13 +87,14 @@ isolated class RunContext {
     }
 
     isolated function startBuild(BuildConfig buildConfig, TestConfig testConfig) returns error? {
-        string|error distPath = buildDist({JAVA_HOME}, buildConfig.basePath);
-        if distPath is error {
-            string message = "Failed to build the distribution due to " + distPath.message();
-            check writeToPr(message, testConfig.token);
-            return distPath;
-        }
-        return self.addToRunQueue(distPath, testConfig);
+        check dispatch(buildConfig.basePath);
+        // string|error distPath = buildDist({JAVA_HOME}, buildConfig.basePath);
+        // if distPath is error {
+        //     string message = "Failed to build the distribution due to " + distPath.message();
+        //     check writeToPr(message, testConfig.token);
+        //     return distPath;
+        // }
+        // return self.addToRunQueue(distPath, testConfig);
     }
 
     isolated function addToRunQueue(string distPath, TestConfig config) returns error? {
@@ -117,9 +118,11 @@ isolated function runTest(string basePath, string distPath, TestConfig config) r
 
 isolated function prepDist(string basePath, string distPath) returns error|string {
     string runnerDir = check file:createTempDir(dir = basePath);
-    check file:copy(distPath, string `${runnerDir}/${PERF_TAR_FILE}`);
-    check tryRun(exec("tar", ["-xvf", string `${runnerDir}/${DIST_TAR_FILE}`], cwd = runnerDir));
-    check tryRun(exec("tar", ["-xvf", string `${runnerDir}/${PERF_TAR_FILE}`], cwd = runnerDir));
+    // JBUG: somehow by this time servers cwd has changed so using absolute paths
+    runnerDir = check file:getAbsolutePath(runnerDir);
+    check tryRun(exec("mkdir", ["-p", runnerDir]));
+    check tryRun(exec("tar", ["-xvf", string `${distPath}`], cwd = runnerDir));
+    check tryRun(exec("tar", ["-xvf", string `${PERF_TAR_FILE}`], cwd = runnerDir));
     return string `${runnerDir}/${PERF_DIST}`;
 }
 
@@ -232,11 +235,19 @@ isolated function buildDist(RunConfig runConfig, string basePath) returns string
     return buildDistribution(runConfig, basePath, ballerinaPerfDir, perfCommonDir);
 }
 
+isolated function dispatch(string basePath) returns error? {
+    string artificatDir = check file:createTempDir(dir = basePath);
+    string ballerinaPerfDir = check file:createTempDir(suffix = "ballerina-performance", dir = artificatDir);
+    io:println("Cloning ballerina performance repository");
+    check cloneRepository(string `https://github.com/${ballerinaPerformanceRepo}`, ballerinaPerformanceBranch, ballerinaPerfDir);
+    var _ = check exec("make", ["run"], cwd = ballerinaPerfDir);
+}
+
 isolated function buildDistribution(RunConfig config, string basePath, string ballerinaPerfDir, string perfCommonDir) returns string|error {
     io:println("Building performance common");
     string perfCommonPath = check file:getAbsolutePath(perfCommonDir);
     var _ = check exec("make",
-            ["dist", string `PERFORMANCE_COMMON_PATH=${perfCommonPath}`, string `KEY_FILE_PREFIX="/home/ubuntu/perf"`, string `JAVA_HOME=${JAVA_HOME}`],
+            ["run"],
             cwd = ballerinaPerfDir);
     string perfDistPath = distTarPath(ballerinaPerfDir);
     check waitTillDistReady(perfDistPath);
@@ -248,6 +259,7 @@ isolated function waitTillDistReady(string distPath) returns error? {
         io:println("Waiting for the distribution to be ready");
         runtime:sleep(10);
     }
+    io:println(string `Distribution ${distPath} is ready`);
 }
 
 isolated function distTarPath(string ballerinaPerDir) returns string {
