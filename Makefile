@@ -31,7 +31,7 @@ DIST_STAMP=.dist.stamp
 
 run: $(DIST_STAMP)
 	chmod +x run.sh
-	./run.sh $(DIST_NAME) $(BAL_INSTALLER_NAME) 2>&1 | run.log
+	./run.sh $(DIST_NAME) $(BAL_INSTALLER_NAME) 2>&1 > run.log
 
 dist: $(DIST_STAMP)
 
