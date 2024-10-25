@@ -234,11 +234,20 @@ isolated function buildDist(RunConfig runConfig, string basePath) returns string
 
 isolated function buildDistribution(RunConfig config, string basePath, string ballerinaPerfDir, string perfCommonDir) returns string|error {
     io:println("Building performance common");
-    check tryRun(exec("make",
-                    ["dist", string `PERFORMANCE_COMMON_PATH=${perfCommonDir}`, string `KEY_FILE_PREFIX="/home/ubuntu/perf`],
-                    config, ballerinaPerfDir));
-    io:println("Finished building performance common");
-    return distTarPath(ballerinaPerfDir);
+    string perfCommonPath = check file:getAbsolutePath(perfCommonDir);
+    var _ = check exec("make",
+            ["dist", string `PERFORMANCE_COMMON_PATH=${perfCommonPath}`, string `KEY_FILE_PREFIX="/home/ubuntu/perf"`, string `JAVA_HOME=${JAVA_HOME}`],
+            cwd = ballerinaPerfDir);
+    string perfDistPath = distTarPath(ballerinaPerfDir);
+    check waitTillDistReady(perfDistPath);
+    return perfDistPath;
+}
+
+isolated function waitTillDistReady(string distPath) returns error? {
+    while (!check file:test(distPath, file:EXISTS)) {
+        io:println("Waiting for the distribution to be ready");
+        runtime:sleep(10);
+    }
 }
 
 isolated function distTarPath(string ballerinaPerDir) returns string {

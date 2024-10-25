@@ -34,7 +34,7 @@ $(NETTY_JAR_PATH) $(PAYLOAD_GENERATOR_JAR_PATH):
 	cd $(PERFORMANCE_COMMON_PATH) && mvn package
 
 $(DEB_STAMP): $(REPACK_STAMP)
-	cd $(BUILD_DIR) && wget $(DEB_URL)
+	cd $(BUILD_DIR) && curl -L -o ballerina-$(BAL_VER)-swan-lake-linux-x64.deb $(DEB_URL)
 	touch $(DEB_STAMP)
 
 $(REPACK_STAMP): $(KEY_STAMP) $(NETTY_REPLACE_STAMP) $(ADD_RUNNER_STAMP) $(SCRIPT_PATH_STAMP)
