@@ -18,6 +18,9 @@ configurable string performanceCommonBranch = "ballerina-patch";
 configurable string keyStorePath = "./ballerinaKeystore.p12";
 configurable string trustStorePath = "./ballerinaTruststore.p12";
 
+const string DIST_TAR_FILE = "dist.tar.gz";
+// FIXME: share common code
+const string PERF_DIST = "ballerina-performance-distribution-1.1.1-SNAPSHOT";
 const string PERF_TAR_FILE = "ballerina-performance-distribution-1.1.1-SNAPSHOT.tar.gz";
 const string NETTY_JAR_FILE = "netty-http-echo-service-0.4.6-SNAPSHOT.jar";
 const string PAYLOD_GENERATOR_JAR_FILE = "payload-generator-0.4.6-SNAPSHOT.jar";
@@ -106,12 +109,18 @@ isolated class RunContext {
 isolated function runTest(string basePath, string distPath, TestConfig config) returns error? {
     io:println("Running performance test");
     check writeToPr("Performance test triggered", config.token);
-    io:println(string `trying to download the ballerina installer from ${config.balInstallerUrl}`);
-    check tryRun(exec("curl", ["-L", "-o", string `${distPath}/ballerina-installer.deb`, config.balInstallerUrl]));
+    string extractedDistribution = check prepDist(basePath, distPath);
     var [command, args] = getRunCommand(config);
     io:println("Running performance tests");
-    string workingDir = distPath;
-    check tryRun(exec(command, args, cwd = workingDir, env = {"AWS_PAGER": ""}));
+    check tryRun(exec(command, args, cwd = extractedDistribution, env = {"AWS_PAGER": ""}));
+}
+
+isolated function prepDist(string basePath, string distPath) returns error|string {
+    string runnerDir = check file:createTempDir(dir = basePath);
+    check file:copy(distPath, string `${runnerDir}/${PERF_TAR_FILE}`);
+    check tryRun(exec("tar", ["-xvf", string `${runnerDir}/${DIST_TAR_FILE}`], cwd = runnerDir));
+    check tryRun(exec("tar", ["-xvf", string `${runnerDir}/${PERF_TAR_FILE}`], cwd = runnerDir));
+    return string `${runnerDir}/${PERF_DIST}`;
 }
 
 isolated function writeResultsBackToGithub(string workingDir, TestConfig config) returns error? {
@@ -182,7 +191,8 @@ isolated function getRunCommand(TestConfig config) returns [string, string[]] {
         "-S c5.xlarge",
         "-N c5.xlarge",
         string `-B ${config.vm}`,
-        string `-i ./ballerina-installer.deb`,
+        // FIXME: get this as a parameter
+        "-i /home/ubuntu/perf/ballerina-2201.10.2-swan-lake-linux-x64.deb",
         "--",
         "-d 360",
         "-w 180"
@@ -224,20 +234,15 @@ isolated function buildDist(RunConfig runConfig, string basePath) returns string
 
 isolated function buildDistribution(RunConfig config, string basePath, string ballerinaPerfDir, string perfCommonDir) returns string|error {
     io:println("Building performance common");
-    check buildPerformanceCommon(config, perfCommonDir);
-    string nettyPath = check getNettyPath(perfCommonDir);
-    string payloadGenerator = check getPayloadGeneratorPath(perfCommonDir);
-    io:println("Building ballerina performance");
-    check buildBallerinaPerformance(config, ballerinaPerfDir);
-    string perfDistPath = check getPerfDistPath(ballerinaPerfDir);
-    io:println("Patching performance distribution");
-    // string newPerfDistpath = check patchPerfDist(basePath, perfDistPath, nettyPath, payloadGenerator, [
-    //             {sourcePath: string `${perfCommonDir}/distribution/scripts/cloudformation`, targetPath: "cloudformation"},
-    //             {sourcePath: string `${perfCommonDir}/distribution/scripts/jmeter`, targetPath: "jmeter"}
-    //         ]);
-    string newPerfDistpath = check patchPerfDist(basePath, perfDistPath, nettyPath, payloadGenerator);
-    // TODO: delete old perf dist
-    return newPerfDistpath;
+    check tryRun(exec("make",
+                    ["dist", string `PERFORMANCE_COMMON_PATH=${perfCommonDir}`, string `KEY_FILE_PREFIX="/home/ubuntu/perf`],
+                    config, ballerinaPerfDir));
+    io:println("Finished building performance common");
+    return distTarPath(ballerinaPerfDir);
+}
+
+isolated function distTarPath(string ballerinaPerDir) returns string {
+    return string `${ballerinaPerDir}/build/${DIST_TAR_FILE}`;
 }
 
 type ScriptReplacement record {
