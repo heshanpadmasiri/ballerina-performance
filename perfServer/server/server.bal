@@ -10,7 +10,7 @@ configurable string JAVA_HOME = "/home/ubuntu/jdk/jdk-17.0.13+11";
 configurable int port = 443;
 configurable string resourcePrefix = "/home/ubuntu/perf";
 
-configurable string ballerinaPerformanceRepo = "heshanpadmasiri/ballerina-performance.s;
+configurable string ballerinaPerformanceRepo = "heshanpadmasiri/ballerina-performance.git";
 configurable string ballerinaPerformanceBranch = "feat/automation";
 configurable string performanceCommonRepo = "heshanpadmasiri/performance-common.git";
 configurable string performanceCommonBranch = "ballerina-patch";
