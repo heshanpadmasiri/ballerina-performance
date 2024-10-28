@@ -28,6 +28,9 @@ KEY_STAMP=.key.stamp
 REPACK_STAMP=.repack.stamp
 DEB_STAMP=.deb.stamp
 DIST_STAMP=.dist.stamp
+NATIVE?=true
+PLATFORM_REPLACEMENT_TARGETS=$(addprefix ./distribution/scripts, /cloudformation/run-performance-tests.sh /cloudformation/templates/ballerina_perf_test_cfn.yaml /jmeter/run-performance-tests.sh /ballerina/ballerina-start.sh /setup/setup-ballerina.sh) 
+PLATFORM_SCRIPT_REPLACEMENT_STAMP=.native.replace.stamp
 
 dist: $(DIST_STAMP)
 
@@ -40,49 +43,71 @@ $(PERFORMANCE_COMMON_PATH):
 
 $(DIST_STAMP): $(REPACK_STAMP) $(DEB_STAMP)
 	tar -czf $(BUILD_DIR)/dist.tar.gz -C $(BUILD_DIR) $(PERF_TAR) ballerina-$(BAL_VER)-swan-lake-linux-x64.deb
-	touch $(DIST_STAMP)
+	@touch $@
 
 $(NETTY_JAR_PATH) $(PAYLOAD_GENERATOR_JAR_PATH): $(PERFORMANCE_COMMON_PATH)
 	cd $(PERFORMANCE_COMMON_PATH) && mvn package
 
 $(DEB_STAMP): $(REPACK_STAMP)
 	cd $(BUILD_DIR) && curl -L -o ballerina-$(BAL_VER)-swan-lake-linux-x64.deb $(DEB_URL)
-	touch $(DEB_STAMP)
+	@touch $@
 
 $(REPACK_STAMP): $(KEY_STAMP) $(NETTY_REPLACE_STAMP) $(SCRIPT_PATH_STAMP)
 	mkdir -p $(BUILD_DIR)/dist/$(DIST_NAME)
 	mv $(BUILD_DIR)/dist/ $(BUILD_DIR)/$(DIST_NAME)
 	tar -czf $(BUILD_DIR)/$(DIST_NAME).tar.gz -C $(BUILD_DIR) $(DIST_NAME)
 	rm -rf $(BUILD_DIR)/$(DIST_NAME)
-	touch $(REPACK_STAMP)
+	@touch $@
 
-$(PERF_TAR_PATH):
+$(PLATFORM_SCRIPT_REPLACEMENT_STAMP): $(PLATFORM_REPLACEMENT_TARGETS)
+ifeq ($(NATIVE),true)
+	REPLACEMENT_SUFFIX=native
+else
+	REPLACEMENT_SUFFIX=jvm
+endif
+	echo "Build type: $(REPLACEMENT_SUFFIX)"
+	for file in $(PLATFORM_REPLACEMENT_TARGETS); do \
+		base_name=$${file%.*}; \
+		extension=$${file##*.};\
+		replacement_file="$${base_name}-$(REPLACEMENT_SUFFIX).$${extension}"; \
+		echo "Replacing $$file with $$replacement_file"; \
+		if [ -f "$$replacement_file" ]; then \
+			cp "$$replacement_file" "$$file"; \
+		else \
+			echo "Replacement file not found for $$file"; \
+			exit 1; \
+		fi; \
+	done
+	@touch $@
+
+$(PERF_TAR_PATH): $(PLATFORM_SCRIPT_REPLACEMENT_STAMP)
+	echo $(NATIVE)
 	mvn clean package
 
 $(KEY_STAMP): $(KEY_FILES) $(UNPACK_STAMP)
 	cp $(KEY_FILES) $(BUILD_DIR)/dist
-	touch $(KEY_STAMP)
+	@touch $@
 
 $(SCRIPT_PATH_STAMP): $(UNPACK_STAMP)
 	cp -r $(CLOUD_FORMATION_SCRIPTS) $(BUILD_DIR)/dist/cloudformation/
 	cp -r $(JMETER_SCRIPTS) $(BUILD_DIR)/dist/jmeter/
-	touch $(SCRIPT_PATH_STAMP)
+	@touch $@
 
 $(NETTY_REPLACE_STAMP): $(NETTY_JAR_PATH) $(UNPACK_STAMP) $(PAYLOAD_GENERATOR_JAR_PATH)
 	rm -f $(BUILD_DIR)/dist/netty-service/$(NETTY_JAR)
 	cp $(NETTY_JAR_PATH) $(BUILD_DIR)/dist/netty-service/$(NETTY_JAR)
 	cp $(PAYLOAD_GENERATOR_JAR_PATH) $(BUILD_DIR)/dist/payloads/$(PAYLOAD_GENERATOR_JAR)
-	touch $(NETTY_REPLACE_STAMP)
+	@touch $@
 
 $(UNPACK_STAMP): $(PERF_TAR_PATH) 
 	mkdir -p $(BUILD_DIR)/dist
 	tar -xzf $(PERF_TAR_PATH) -C $(BUILD_DIR)/dist
-	touch $(UNPACK_STAMP)
+	@touch $@
 
 clean:
 	cd $(PERFORMANCE_COMMON_PATH) && mvn clean
 	mvn clean
-	rm -rf *.stamp
+	@find . -name "*.stamp" -type f -delete
 	rm -rf $(BUILD_DIR)
 
 .PHONY: clean dist run
