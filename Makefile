@@ -61,14 +61,14 @@ $(REPACK_STAMP): $(KEY_STAMP) $(NETTY_REPLACE_STAMP) $(SCRIPT_PATH_STAMP)
 
 $(PLATFORM_SCRIPT_REPLACEMENT_STAMP):
 ifeq ($(NATIVE),true)
-	@echo "Native build"
+	echo "Native build"
 	@for file in $(PLATFORM_REPLACEMENT_TARGETS); do \
 		base_name=$${file%.*}; \
 		extension=$${file##*.};\
 		native_file="$${base_name}-native.$${extension}"; \
-		@echo "Replacing $$file with $$native_file"; \
+		echo "Replacing $$file with $$native_file"; \
 		if [ -f "$$native_file" ]; then \
-			ln -sf "$$native_file" "$$file"; \
+			cp "$$native_file" "$$file"; \
 		else \
 			echo "Native file not found for $$file"; \
 			exit 1; \
@@ -76,14 +76,14 @@ ifeq ($(NATIVE),true)
 	done
 	@touch $@
 else
-	@echo "JVM build"
+	echo "JVM build"
 	@for file in $(PLATFORM_REPLACEMENT_TARGETS); do \
 		base_name=$${file%.*}; \
 		extension=$${file##*.};\
 		native_file="$${base_name}-jvm.$${extension}"; \
-		@echo "Replacing $$file with $$native_file"; \
+		echo "Replacing $$file with $$native_file"; \
 		if [ -f "$$native_file" ]; then \
-			ln -sf "$$native_file" "$$file"; \
+			cp "$$native_file" "$$file"; \
 		else \
 			echo "Native file not found for $$file"; \
 			exit 1; \
