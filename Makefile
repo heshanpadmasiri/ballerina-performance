@@ -28,7 +28,7 @@ KEY_STAMP=.key.stamp
 REPACK_STAMP=.repack.stamp
 DEB_STAMP=.deb.stamp
 DIST_STAMP=.dist.stamp
-NATIVE?=true
+NATIVE?=false
 PLATFORM_REPLACEMENT_TARGETS=$(addprefix ./distribution/scripts, /cloudformation/run-performance-tests.sh /cloudformation/templates/ballerina_perf_test_cfn.yaml /jmeter/run-performance-tests.sh /ballerina/ballerina-start.sh /setup/setup-ballerina.sh) 
 PLATFORM_SCRIPT_REPLACEMENT_STAMP=.native.replace.stamp
 
