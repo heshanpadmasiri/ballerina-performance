@@ -88,7 +88,9 @@ function setup() {
     echo "$netty_host netty" >>/etc/hosts
 
     tar -xzf $graalvm_distribution
-    export GRAALVM_HOME=$(pwd)/$(ls | grep graalvm-ce-)
+    export GRAALVM_HOME=$(realpath ./graalvm-community-openjdk-17.0.9+9.1/Contents/Home)
+    export PATH=$GRAALVM_HOME/bin:$PATH
+    export JAVA_HOME=$GRAALVM_HOME
 
     # Build Ballerina Files
     pushd $script_dir/../ballerina/bal

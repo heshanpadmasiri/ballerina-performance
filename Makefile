@@ -116,9 +116,9 @@ $(UNPACK_STAMP): $(PERF_TAR_PATH)
 	@touch $@
 
 clean:
+	@find . -name "*.stamp" -type f -delete
 	cd $(PERFORMANCE_COMMON_PATH) && mvn clean
 	mvn clean
-	@find . -name "*.stamp" -type f -delete
 	rm -rf $(BUILD_DIR)
 
 .PHONY: clean dist run

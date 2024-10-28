@@ -111,12 +111,11 @@ echo "Setting Heap to ${heap_size}"
 export JAVA_OPTS=" -Xms${heap_size} -Xmx${heap_size}"
 JAVA_OPTS+=" -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath="${ballerina_path}/logs/heap-dump.hprof""
 
-ballerina_command="bal run ${bal_flags} ${ballerina_file}"
 echo "Starting Ballerina: $ballerina_command"
 cd $ballerina_path
 nohup bal build --graalvm ${bal_flags} ${ballerina_file}
 exe_name="${ballerina_file%.bal}"
-nohup ./exe_name &>${ballerina_path}/logs/ballerina.log &
+nohup ./${exe_name} &>${ballerina_path}/logs/ballerina.log &
 
 # TODO Do a curl and check if service is started
 echo "Waiting to make sure that the server is ready to accept requests."
