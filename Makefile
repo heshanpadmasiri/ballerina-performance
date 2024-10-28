@@ -59,29 +59,40 @@ $(REPACK_STAMP): $(KEY_STAMP) $(NETTY_REPLACE_STAMP) $(SCRIPT_PATH_STAMP)
 	rm -rf $(BUILD_DIR)/$(DIST_NAME)
 	@touch $@
 
-$(PLATFORM_SCRIPT_REPLACEMENT_STAMP): $(PLATFORM_REPLACEMENT_TARGETS)
+$(PLATFORM_SCRIPT_REPLACEMENT_STAMP):
 ifeq ($(NATIVE),true)
-	REPLACEMENT_SUFFIX=native
-else
-	REPLACEMENT_SUFFIX=jvm
-endif
-	echo "Build type: $(REPLACEMENT_SUFFIX)"
-	for file in $(PLATFORM_REPLACEMENT_TARGETS); do \
+	@echo "Native build"
+	@for file in $(PLATFORM_REPLACEMENT_TARGETS); do \
 		base_name=$${file%.*}; \
 		extension=$${file##*.};\
-		replacement_file="$${base_name}-$(REPLACEMENT_SUFFIX).$${extension}"; \
-		echo "Replacing $$file with $$replacement_file"; \
-		if [ -f "$$replacement_file" ]; then \
-			cp "$$replacement_file" "$$file"; \
+		native_file="$${base_name}-native.$${extension}"; \
+		@echo "Replacing $$file with $$native_file"; \
+		if [ -f "$$native_file" ]; then \
+			ln -sf "$$native_file" "$$file"; \
 		else \
-			echo "Replacement file not found for $$file"; \
+			echo "Native file not found for $$file"; \
 			exit 1; \
 		fi; \
 	done
 	@touch $@
+else
+	@echo "JVM build"
+	@for file in $(PLATFORM_REPLACEMENT_TARGETS); do \
+		base_name=$${file%.*}; \
+		extension=$${file##*.};\
+		native_file="$${base_name}-jvm.$${extension}"; \
+		@echo "Replacing $$file with $$native_file"; \
+		if [ -f "$$native_file" ]; then \
+			ln -sf "$$native_file" "$$file"; \
+		else \
+			echo "Native file not found for $$file"; \
+			exit 1; \
+		fi; \
+	done
+	@touch $@
+endif
 
 $(PERF_TAR_PATH): $(PLATFORM_SCRIPT_REPLACEMENT_STAMP)
-	echo $(NATIVE)
 	mvn clean package
 
 $(KEY_STAMP): $(KEY_FILES) $(UNPACK_STAMP)
