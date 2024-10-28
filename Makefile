@@ -35,8 +35,8 @@ PLATFORM_SCRIPT_REPLACEMENT_STAMP=.native.replace.stamp
 dist: $(DIST_STAMP)
 
 run: $(DIST_STAMP)
-	chmod +x run.sh
-	./run.sh $(DIST_NAME) $(BAL_INSTALLER_NAME) 2>&1 > run.log
+	chmod +x run-native.sh
+	./run-native.sh $(DIST_NAME) $(BAL_INSTALLER_NAME) 2>&1 > run.log
 
 $(PERFORMANCE_COMMON_PATH):
 	git clone --depth=1 $(PERFORMANCE_COMMON_REPO) $(PERFORMANCE_COMMON_PATH) -b $(PERFORMANCE_COMMON_BRANCH)
